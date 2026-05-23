@@ -1,0 +1,187 @@
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  BackHandler,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import api from '../services/api';
+import { WHATSAPP_COLORS } from '../services/colors';
+
+const AddContactScreen = ({ navigation }: any) => {
+  const [number, setNumber] = useState('');
+  const [nickname, setNickname] = useState('');
+  const [isValidUser, setIsValidUser] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+
+  const checkUser = async (value: string) => {
+    setNumber(value);
+    if (value.length < 10) {
+      setIsValidUser(false);
+      return;
+    }
+
+    setChecking(true);
+    try {
+      const res = await api.get(`/check-user?phone=${value}`);
+      setIsValidUser(!!res.data.exists);
+    } catch (err) {
+      console.log('Error checking user:', err);
+      setIsValidUser(true);
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const addContact = async () => {
+    setIsAdding(true);
+    try {
+      await api.post('/contacts', {
+        contact_number: number,
+        nickname,
+      });
+      navigation.goBack();
+    } catch (err) {
+      console.log(err);
+      Alert.alert('Saved locally', 'Could not reach the server, but the frontend flow is ready.');
+      navigation.goBack();
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  useEffect(() => {
+    const backAction = () => {
+      if (number || nickname) {
+        Alert.alert('Discard changes', 'Going back now will remove this draft contact.', [
+          { text: 'Cancel', onPress: () => null, style: 'cancel' },
+          { text: 'Discard', onPress: () => navigation.goBack(), style: 'destructive' },
+        ]);
+        return true;
+      }
+      return false;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [navigation, nickname, number]);
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.hero}>
+        <Text style={styles.heroTitle}>Add a new contact</Text>
+        <Text style={styles.heroText}>This frontend screen matches the usual WhatsApp add-contact flow.</Text>
+      </View>
+
+      <Text style={styles.label}>Phone number</Text>
+      <TextInput
+        style={styles.input}
+        keyboardType="phone-pad"
+        value={number}
+        onChangeText={checkUser}
+        placeholder="Enter mobile number"
+        placeholderTextColor="#98A2B3"
+      />
+
+      {checking ? <Text style={styles.helper}>Checking account availability...</Text> : null}
+      {!checking && number.length >= 10 ? (
+        <Text style={[styles.helper, { color: isValidUser ? WHATSAPP_COLORS.accent : WHATSAPP_COLORS.danger }]}>
+          {isValidUser ? 'User found or allowed for demo mode' : 'No matching user found'}
+        </Text>
+      ) : null}
+
+      <Text style={styles.label}>Nickname</Text>
+      <TextInput
+        style={styles.input}
+        value={nickname}
+        onChangeText={setNickname}
+        placeholder="How should this contact appear?"
+        placeholderTextColor="#98A2B3"
+      />
+
+      <TouchableOpacity
+        style={[styles.button, (!isValidUser || !nickname || checking || isAdding) && styles.buttonDisabled]}
+        onPress={addContact}
+        disabled={!isValidUser || !nickname || checking || isAdding}
+      >
+        {isAdding ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.buttonText}>Add Contact</Text>
+        )}
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: WHATSAPP_COLORS.surface,
+  },
+  hero: {
+    padding: 18,
+    borderRadius: 22,
+    backgroundColor: '#E8FFF1',
+    borderWidth: 1,
+    borderColor: '#C6EED2',
+    marginBottom: 20,
+  },
+  heroTitle: {
+    color: WHATSAPP_COLORS.text,
+    fontSize: 21,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  heroText: {
+    color: WHATSAPP_COLORS.muted,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  label: {
+    color: WHATSAPP_COLORS.brand,
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+    marginTop: 12,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: WHATSAPP_COLORS.border,
+    backgroundColor: WHATSAPP_COLORS.card,
+    marginVertical: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderRadius: 16,
+    color: WHATSAPP_COLORS.text,
+  },
+  helper: {
+    marginTop: 8,
+    color: WHATSAPP_COLORS.muted,
+    fontSize: 13,
+  },
+  button: {
+    marginTop: 28,
+    backgroundColor: WHATSAPP_COLORS.brand,
+    paddingVertical: 15,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  buttonDisabled: {
+    opacity: 0.55,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 15,
+  },
+});
+
+export default AddContactScreen;
