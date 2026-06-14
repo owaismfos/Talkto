@@ -5,23 +5,47 @@ import CONFIG from '../config';
 class SocketService {
     private socket: WebSocket | null = null;
     private listeners: Set<(data: any) => void> = new Set();
+    private userId: string | null = null;
+    private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    private shouldReconnect = false;
 
     connect(userId: string) {
-        if (this.socket) return; // Already connected
+        if (this.socket && this.userId === userId) return; // Already connected
+        if (this.socket && this.userId !== userId) {
+            this.disconnect();
+        }
 
-        this.socket = new WebSocket(`${CONFIG.WS_URL}/ws/${userId}`);
+        this.userId = userId;
+        this.shouldReconnect = true;
 
-        this.socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            // Notify all UI listeners (screens) that a message arrived
-            console.log("Received message via socket:", data);
-            this.listeners.forEach((listener) => listener(data));
+        const socket = new WebSocket(`${CONFIG.WS_URL}/ws/${userId}`);
+        this.socket = socket;
+
+        socket.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                this.listeners.forEach((listener) => listener(data));
+            } catch (error) {
+                console.log("Socket message parse error:", error);
+            }
         };
 
-        this.socket.onclose = () => {
-            this.socket = null;
-            console.log("Socket closed. Attempting reconnect...");
-            // Add exponential backoff logic here
+        socket.onclose = () => {
+            if (this.socket === socket) {
+                this.socket = null;
+            }
+            if (!this.socket && this.shouldReconnect && this.userId && !this.reconnectTimer) {
+                this.reconnectTimer = setTimeout(() => {
+                    this.reconnectTimer = null;
+                    if (this.userId) {
+                        this.connect(this.userId);
+                    }
+                }, 2000);
+            }
+        };
+
+        socket.onerror = () => {
+            socket.close();
         };
     }
 
@@ -42,6 +66,12 @@ class SocketService {
     }
 
     disconnect() {
+        this.shouldReconnect = false;
+        this.userId = null;
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
+        }
         this.socket?.close();
         this.socket = null;
     }

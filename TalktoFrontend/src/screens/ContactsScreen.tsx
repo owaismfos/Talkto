@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import api from '../services/api';
-import { mockChats } from '../data/mockAppData';
 import { getInitials, getAvatarColor } from '../services/helper'
 import { WHATSAPP_COLORS } from '../services/colors';
 
@@ -11,30 +11,25 @@ interface Contact {
   added_at: string;
 }
 
-const fallbackContacts: Contact[] = mockChats.map(item => ({
-  id: item.id,
-  nickname: item.name,
-  added_at: item.time,
-}));
-
 const ContactsScreen = ({ navigation }: any) => {
   const [contactList, setContactList] = useState<Contact[]>([]);
 
-  useEffect(() => {
+  useFocusEffect(
+    useCallback(() => {
     const getContacts = async () => {
       try {
         const res = await api.get('/contacts');
-        if (Array.isArray(res.data.contacts) && res.data.contacts.length > 0) {
-          setContactList(res.data.contacts); //WhatsApp-style frontend
-        }
+        setContactList(Array.isArray(res.data.contacts) ? res.data.contacts : []);
       } catch (err) {
         console.log(err);
-        Alert.alert('Using demo contacts', 'Could not load contacts from the server.');
+        setContactList([]);
+        Alert.alert('Contacts unavailable', 'Could not load contacts from the server.');
       }
     };
 
     getContacts();
-  }, []);
+    }, []),
+  );
 
   return (
     <View style={styles.container}>
@@ -42,6 +37,7 @@ const ContactsScreen = ({ navigation }: any) => {
         data={contactList}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.content}
+        ListEmptyComponent={<Text style={styles.emptyText}>No contacts saved yet.</Text>}
         renderItem={({ item }) => (
           <TouchableOpacity
             onPress={() => navigation.navigate('ChatDetail', { contactName: item.nickname, contactId: item.id })}
@@ -55,7 +51,7 @@ const ContactsScreen = ({ navigation }: any) => {
             </View>
             <View style={styles.textContainer}>
               <Text style={styles.name}>{item.nickname}</Text>
-              <Text style={styles.status}>Added {item.added_at}</Text>
+              <Text style={styles.status}>Added {new Date(item.added_at).toLocaleDateString()}</Text>
             </View>
           </TouchableOpacity>
         )}
@@ -108,6 +104,12 @@ const styles = StyleSheet.create({
     color: WHATSAPP_COLORS.muted,
     fontSize: 13,
     marginTop: 4,
+  },
+  emptyText: {
+    color: WHATSAPP_COLORS.muted,
+    fontSize: 14,
+    textAlign: 'center',
+    paddingVertical: 20,
   },
 });
 

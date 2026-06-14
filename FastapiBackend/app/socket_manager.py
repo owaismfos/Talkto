@@ -1,6 +1,5 @@
 # main.py or websocket_manager.py
 import asyncio
-from email.mime import message
 
 from fastapi import WebSocket, Depends
 from typing import Dict
@@ -18,7 +17,12 @@ class ConnectionManager:
     async def connect(self, user_id: str, websocket: WebSocket):
         await websocket.accept()
         self.active_connections[user_id] = websocket
-        print(f"User {user_id} connected. Total connections: {len(self.active_connections)}")
+        await self.broadcast({
+            "action": "presence_update",
+            "user_id": user_id,
+            "status": "online",
+            "last_seen": "Online",
+        })
 
     async def disconnect(self, user_id: str, db: Session):
         if user_id in self.active_connections:
@@ -39,11 +43,11 @@ class ConnectionManager:
     def update_last_seen(self, user_id: str, db: Session):
         # This method can be called to update the last seen time for a user
         now = datetime.now(timezone.utc)
-        print(f"Updating last seen for user {user_id} at {now.isoformat()}")
         user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return None
         user.last_seen = now
         db.commit()
-        print(f"User {user_id} last seen updated to {now.isoformat()}")
         return now
 
     async def send_personal_message(self, message: dict, user_id: str):

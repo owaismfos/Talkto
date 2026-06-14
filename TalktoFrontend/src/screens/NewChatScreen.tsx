@@ -1,10 +1,39 @@
-import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { mockChats } from '../data/mockAppData';
+import React, { useCallback, useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { WHATSAPP_COLORS } from '../services/colors';
 import { getInitials } from '../services/helper';
+import api from '../services/api';
+
+interface Contact {
+  id: string;
+  nickname: string;
+  added_at: string;
+}
 
 const NewChatScreen = ({ navigation }: any) => {
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      const getContacts = async () => {
+        setIsLoading(true);
+        try {
+          const res = await api.get('/contacts');
+          setContacts(Array.isArray(res.data.contacts) ? res.data.contacts : []);
+        } catch (err) {
+          console.log(err);
+          Alert.alert('Contacts unavailable', 'Could not load contacts from the server.');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      getContacts();
+    }, []),
+  );
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.actionRow}>
@@ -18,21 +47,25 @@ const NewChatScreen = ({ navigation }: any) => {
         </TouchableOpacity>
       </View>
       <Text style={styles.sectionTitle}>Start a conversation</Text>
-      {mockChats.map(item => (
+      {isLoading ? <ActivityIndicator color={WHATSAPP_COLORS.brand} /> : null}
+      {contacts.map(item => (
         <TouchableOpacity
           key={item.id}
           style={styles.contactCard}
-          onPress={() => navigation.navigate('ChatDetail', { contactName: item.name, contactId: item.id })}
+          onPress={() => navigation.navigate('ChatDetail', { contactName: item.nickname, contactId: item.id })}
         >
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{getInitials(item.name)}</Text>
+            <Text style={styles.avatarText}>{getInitials(item.nickname)}</Text>
           </View>
           <View style={styles.body}>
-            <Text style={styles.name}>{item.name}</Text>
-            <Text style={styles.status}>{item.status}</Text>
+            <Text style={styles.name}>{item.nickname}</Text>
+            <Text style={styles.status}>Tap to message</Text>
           </View>
         </TouchableOpacity>
       ))}
+      {!contacts.length && !isLoading ? (
+        <Text style={styles.emptyText}>No contacts yet. Add a contact first.</Text>
+      ) : null}
     </ScrollView>
   );
 };
@@ -73,6 +106,12 @@ const styles = StyleSheet.create({
   body: { flex: 1 },
   name: { color: WHATSAPP_COLORS.text, fontSize: 16, fontWeight: '700', marginBottom: 4 },
   status: { color: WHATSAPP_COLORS.muted, fontSize: 13 },
+  emptyText: {
+    color: WHATSAPP_COLORS.muted,
+    fontSize: 14,
+    textAlign: 'center',
+    paddingVertical: 16,
+  },
 });
 
 export default NewChatScreen;

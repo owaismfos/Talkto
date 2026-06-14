@@ -1,37 +1,71 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
-  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import {
   HomeTabKey,
-  mockCalls,
-  mockChats,
-  mockCommunities,
   mockSettings,
-  mockStatuses
 } from '../data/mockAppData';
 import { WHATSAPP_COLORS } from '../services/colors'
 
-import { ChatPreview } from '../services/interfaces'
+import { CallItem, ChatPreview, CommunityItem, StatusUpdate } from '../services/interfaces'
 import * as Keychain from 'react-native-keychain';
 import { styles as settingStyle } from './SettingsScreen';
 import { getInitials } from '../services/helper'
 import api from '../services/api'
 import Avatar from '../components/Avatar';
+import { useFocusEffect } from '@react-navigation/native';
+import { socketService } from '../services/SocketService';
 
 const TABS: HomeTabKey[] = ['Chats', 'Updates', 'Communities', 'Calls'];
 
 const HomeScreen = ({ navigation }: any) => {
   const [activeTab, setActiveTab] = useState<HomeTabKey>('Chats');
   const [chatList, setChatList] = useState<ChatPreview[]>([]);
+  const [statuses, setStatuses] = useState<StatusUpdate[]>([]);
+  const [calls, setCalls] = useState<CallItem[]>([]);
+  const [groups, setGroups] = useState<CommunityItem[]>([]);
+  const [statusDraft, setStatusDraft] = useState('');
+  const [groupName, setGroupName] = useState('');
+  const [groupDescription, setGroupDescription] = useState('');
+  const [groupMemberPhone, setGroupMemberPhone] = useState('');
+  const [isCreatingStatus, setIsCreatingStatus] = useState(false);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+  const [isLoadingHomeData, setIsLoadingHomeData] = useState(false);
+
+  const loadHomeData = useCallback(async (showLoader = true) => {
+    if (showLoader) {
+      setIsLoadingHomeData(true);
+    }
+    try {
+      const [chatsRes, statusesRes, callsRes, groupsRes] = await Promise.all([
+        api.get('/chats/users'),
+        api.get('/statuses'),
+        api.get('/calls'),
+        api.get('/groups'),
+      ]);
+      setChatList(Array.isArray(chatsRes.data.users) ? chatsRes.data.users : []);
+      setStatuses(Array.isArray(statusesRes.data.statuses) ? statusesRes.data.statuses : []);
+      setCalls(Array.isArray(callsRes.data.calls) ? callsRes.data.calls : []);
+      setGroups(Array.isArray(groupsRes.data.groups) ? groupsRes.data.groups : []);
+    } catch (err) {
+      console.log(err);
+      Alert.alert('Server data unavailable', 'Could not load all home data from the server.');
+    } finally {
+      if (showLoader) {
+        setIsLoadingHomeData(false);
+      }
+    }
+  }, []);
 
   const headerAction = useMemo(() => {
     if (activeTab === 'Chats') {
@@ -43,55 +77,78 @@ const HomeScreen = ({ navigation }: any) => {
     return { label: 'Settings', route: 'Settings' };
   }, [activeTab]);
 
-  useEffect(() => {
-    const getChats = async () => {
-      try {
-        const res = await api.get('/chats/users');
-        console.log(res.data)
-        if (Array.isArray(res.data.users) && res.data.users.length > 0) {
-          // const mappedChats = res.data.users.map((item: ChatUser) => ({
-          //   id: item.id,
-          //   name: item.name,
-          //   status: item.status,
-          //   // lastMessage: item.status,
-          //   // lastSeen: item.status,
-          //   // unreadCount: 0,
-          //   // time: 'Now',
-          // }));
-          // setChatList(mappedChats);
-          setChatList(res.data.users);
-        }
-      } catch (err) {
-        console.log(err);
-        Alert.alert('Using demo chats', 'Could not load chats from the server.');
-      }
-    };
+  useFocusEffect(
+    useCallback(() => {
+      loadHomeData();
+    }, [loadHomeData]),
+  );
 
-    getChats();
-  }, []);
+  useEffect(() => {
+    const unsubscribe = socketService.subscribe(data => {
+      if (data.action === 'new_message') {
+        loadHomeData(false);
+      }
+    });
+
+    return unsubscribe;
+  }, [loadHomeData]);
+
+  const createStatus = async () => {
+    const content = statusDraft.trim();
+    if (!content) {
+      return;
+    }
+
+    setIsCreatingStatus(true);
+    try {
+      const res = await api.post('/statuses', { content, status_type: 'text' });
+      if (res.data.status) {
+        setStatuses(prev => [res.data.status, ...prev]);
+      }
+      setStatusDraft('');
+    } catch (err) {
+      console.log(err);
+      Alert.alert('Status not saved', 'Could not create the status on the server.');
+    } finally {
+      setIsCreatingStatus(false);
+    }
+  };
+
+  const createGroup = async () => {
+    const name = groupName.trim();
+    if (!name) {
+      return;
+    }
+
+    setIsCreatingGroup(true);
+    try {
+      const res = await api.post('/groups', {
+        name,
+        description: groupDescription.trim() || null,
+        member_phone_numbers: groupMemberPhone.trim() ? [groupMemberPhone.trim()] : [],
+      });
+      if (res.data.group) {
+        setGroups(prev => [res.data.group, ...prev]);
+      }
+      setGroupName('');
+      setGroupDescription('');
+      setGroupMemberPhone('');
+    } catch (err) {
+      console.log(err);
+      Alert.alert('Group not created', 'Could not create the group on the server.');
+    } finally {
+      setIsCreatingGroup(false);
+    }
+  };
 
   const renderChats = () => (
     <FlatList
       data={chatList}
       keyExtractor={item => item.id}
       contentContainerStyle={styles.listContent}
-      // ListHeaderComponent={
-      //   <View style={styles.heroCard}>
-      //     <Text style={styles.heroEyebrow}>Inbox</Text>
-      //     <Text style={styles.heroTitle}>Keep important conversations one tap away.</Text>
-      //     <View style={styles.heroActions}>
-      //       <Pressable style={styles.heroButton} onPress={() => navigation.navigate('ArchivedChats')}>
-      //         <Text style={styles.heroButtonText}>Archived</Text>
-      //       </Pressable>
-      //       <Pressable
-      //         style={[styles.heroButton, styles.heroButtonAlt]}
-      //         onPress={() => navigation.navigate('Contacts')}
-      //       >
-      //         <Text style={[styles.heroButtonText, styles.heroButtonAltText]}>Contacts</Text>
-      //       </Pressable>
-      //     </View>
-      //   </View>
-      // }
+      ListEmptyComponent={!isLoadingHomeData ? (
+        <Text style={styles.emptyText}>No chats yet. Start a new chat from your contacts.</Text>
+      ) : null}
       renderItem={({ item }) => (
         <TouchableOpacity
           style={styles.rowCard}
@@ -104,11 +161,11 @@ const HomeScreen = ({ navigation }: any) => {
           <View style={styles.rowBody}>
             <View style={styles.rowTop}>
               <Text style={styles.rowTitle}>{item.name}</Text>
-              <Text style={styles.rowMeta}>{item.last_message_time}</Text>
+              <Text style={styles.rowMeta}>{item.last_message_time || ''}</Text>
             </View>
             <View style={styles.rowBottom}>
               <Text numberOfLines={1} style={styles.rowSubtitle}>
-                {item?.last_message}
+                {item?.last_message || item.status || 'Tap to start chatting'}
               </Text>
               {item?.unreadCount > 0 ? (
                 <View style={styles.badge}>
@@ -126,7 +183,22 @@ const HomeScreen = ({ navigation }: any) => {
     <ScrollView contentContainerStyle={styles.listContent}>
       <View style={styles.heroCard}>
         <Text style={styles.heroEyebrow}>Updates</Text>
-        <Text style={styles.heroTitle}>Status and channels collected in one feed.</Text>
+        <Text style={styles.heroTitle}>Share a 24-hour text status with your contacts.</Text>
+        <TextInput
+          style={styles.input}
+          value={statusDraft}
+          onChangeText={setStatusDraft}
+          placeholder="What's happening?"
+          placeholderTextColor="#98A2B3"
+          multiline
+        />
+        <TouchableOpacity
+          style={[styles.primaryButton, (!statusDraft.trim() || isCreatingStatus) && styles.disabledButton]}
+          onPress={createStatus}
+          disabled={!statusDraft.trim() || isCreatingStatus}
+        >
+          {isCreatingStatus ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryButtonText}>Post status</Text>}
+        </TouchableOpacity>
       </View>
       <TouchableOpacity style={styles.rowCard} onPress={() => navigation.navigate('Profile')}>
         <View style={styles.avatar}>
@@ -137,17 +209,21 @@ const HomeScreen = ({ navigation }: any) => {
           <Text style={styles.rowSubtitle}>Tap to add a text or photo update</Text>
         </View>
       </TouchableOpacity>
-      {mockStatuses.map(item => (
+      {statuses.map(item => (
         <View key={item.id} style={styles.rowCard}>
           <View style={[styles.avatar, item.seen ? styles.avatarMuted : styles.avatarAccent]}>
             <Text style={styles.avatarText}>{getInitials(item.name)}</Text>
           </View>
           <View style={styles.rowBody}>
             <Text style={styles.rowTitle}>{item.name}</Text>
-            <Text style={styles.rowSubtitle}>{item.time}</Text>
+            <Text style={styles.rowSubtitle}>{item.content || item.time}</Text>
+            <Text style={styles.communityMeta}>{item.time}</Text>
           </View>
         </View>
       ))}
+      {!statuses.length && !isLoadingHomeData ? (
+        <Text style={styles.emptyText}>No active statuses yet.</Text>
+      ) : null}
     </ScrollView>
   );
 
@@ -155,9 +231,38 @@ const HomeScreen = ({ navigation }: any) => {
     <ScrollView contentContainerStyle={styles.listContent}>
       <View style={styles.communityBanner}>
         <Text style={styles.heroEyebrow}>Communities</Text>
-        <Text style={styles.heroTitle}>Organize large groups with announcement spaces.</Text>
+        <Text style={styles.heroTitle}>Create groups and add members by phone number.</Text>
+        <TextInput
+          style={styles.input}
+          value={groupName}
+          onChangeText={setGroupName}
+          placeholder="Group name"
+          placeholderTextColor="#98A2B3"
+        />
+        <TextInput
+          style={styles.input}
+          value={groupDescription}
+          onChangeText={setGroupDescription}
+          placeholder="Description"
+          placeholderTextColor="#98A2B3"
+        />
+        <TextInput
+          style={styles.input}
+          value={groupMemberPhone}
+          onChangeText={setGroupMemberPhone}
+          placeholder="Member phone number"
+          placeholderTextColor="#98A2B3"
+          keyboardType="phone-pad"
+        />
+        <TouchableOpacity
+          style={[styles.primaryButton, (!groupName.trim() || isCreatingGroup) && styles.disabledButton]}
+          onPress={createGroup}
+          disabled={!groupName.trim() || isCreatingGroup}
+        >
+          {isCreatingGroup ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryButtonText}>Create group</Text>}
+        </TouchableOpacity>
       </View>
-      {mockCommunities.map(item => (
+      {groups.map(item => (
         <View key={item.id} style={styles.rowCard}>
           <View style={[styles.avatar, styles.communityAvatar]}>
             <Text style={styles.avatarText}>{getInitials(item.name)}</Text>
@@ -169,6 +274,9 @@ const HomeScreen = ({ navigation }: any) => {
           </View>
         </View>
       ))}
+      {!groups.length && !isLoadingHomeData ? (
+        <Text style={styles.emptyText}>No groups yet.</Text>
+      ) : null}
     </ScrollView>
   );
 
@@ -178,8 +286,14 @@ const HomeScreen = ({ navigation }: any) => {
         <Text style={styles.heroEyebrow}>Calls</Text>
         <Text style={styles.heroTitle}>Create call links and see your recent call history.</Text>
       </View>
-      {mockCalls.map(item => (
-        <TouchableOpacity key={item.id} style={styles.rowCard} onPress={() => navigation.navigate('NewCall')}>
+      {calls.map(item => (
+        <TouchableOpacity
+          key={item.id}
+          style={styles.rowCard}
+          onPress={() => item.contact_id
+            ? navigation.navigate('Call', { contactId: item.contact_id, contactName: item.name, callType: item.type, mode: 'outgoing' })
+            : navigation.navigate('NewCall')}
+        >
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{getInitials(item.name)}</Text>
           </View>
@@ -194,6 +308,9 @@ const HomeScreen = ({ navigation }: any) => {
           </View>
         </TouchableOpacity>
       ))}
+      {!calls.length && !isLoadingHomeData ? (
+        <Text style={styles.emptyText}>No calls yet.</Text>
+      ) : null}
     </ScrollView>
   );
 
@@ -315,6 +432,34 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     fontWeight: '700',
   },
+  input: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: WHATSAPP_COLORS.border,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    color: WHATSAPP_COLORS.text,
+    fontSize: 14,
+  },
+  primaryButton: {
+    marginTop: 12,
+    minHeight: 44,
+    borderRadius: 14,
+    backgroundColor: WHATSAPP_COLORS.brand,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+  },
+  disabledButton: {
+    opacity: 0.55,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+  },
   heroActions: {
     flexDirection: 'row',
     gap: 10,
@@ -418,6 +563,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
+  emptyText: {
+    color: WHATSAPP_COLORS.muted,
+    fontSize: 14,
+    textAlign: 'center',
+    paddingVertical: 18,
+  },
   tabBar: {
     flexDirection: 'row',
     backgroundColor: WHATSAPP_COLORS.card,
@@ -500,4 +651,3 @@ export default HomeScreen;export const SettingsScreen = ({ navigation, onLogout 
     </ScrollView>
   );
 };
-

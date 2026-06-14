@@ -5,12 +5,6 @@ import { ChatPreview } from '../services/interfaces';
 import { getInitials } from '../services/helper'
 import { WHATSAPP_COLORS } from '../services/colors'
 
-interface ChatUser {
-  id: string;
-  name: string;
-  status: string;
-}
-
 const ChatsListScreen = ({ navigation }: any) => {
   const [chatList, setChatList] = useState<ChatPreview[]>([]);
 

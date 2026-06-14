@@ -32,7 +32,7 @@ const getLoginErrorMessage = (error: unknown) => {
   return error instanceof Error ? error.message : 'Unexpected login error';
 };
 
-const LoginScreen = ({ navigation, onLoginSuccess }: any) => {
+const LoginScreen = ({ navigation: _navigation, onLoginSuccess }: any) => {
   const [loading, setLoading] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');

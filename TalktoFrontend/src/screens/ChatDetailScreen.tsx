@@ -19,7 +19,7 @@ import { useNavigation } from '@react-navigation/native';
 import { errorCodes, isErrorWithCode, pick, types } from '@react-native-documents/picker';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import Video from 'react-native-video';
-import AudioRecorderPlayer from 'react-native-audio-recorder-player';
+import AudioRecorderPlayer from 'react-native-nitro-sound';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import uuid from 'react-native-uuid';
 import api from '../services/api';
@@ -401,6 +401,15 @@ const ChatDetailScreen = ({ route }: any) => {
     };
   };
 
+  const upsertMessage = useCallback((nextMessage: Message) => {
+    setMessages(prev => {
+      if (prev.some(item => item.id === nextMessage.id)) {
+        return prev.map(item => item.id === nextMessage.id ? nextMessage : item);
+      }
+      return [nextMessage, ...prev];
+    });
+  }, []);
+
   const sendMessage = async () => {
     const trimmedMessage = message.trim();
     if (!trimmedMessage && !attachment) {
@@ -423,6 +432,7 @@ const ChatDetailScreen = ({ route }: any) => {
     };
 
     setMessages(prev => [pendingMessage, ...prev]);
+    console.log('Sending message:', pendingMessage);
     setMessage('');
     setAttachment(null);
     setIsSending(true);
@@ -434,12 +444,17 @@ const ChatDetailScreen = ({ route }: any) => {
         msg_type: uploaded?.msg_type ?? 'text',
         media_url: uploaded?.media_url ?? null,
       });
+      console.log('Message sent, server response:', res.data);
       if (res.data.chat_message) {
+        // setMessages(prev => [pendingMessage, ...prev])
         setMessages(prev => prev.map(item => item.id === pendingMessage.id ? res.data.chat_message : item));
       }
     } catch (err) {
       console.log(err);
-      Alert.alert('Demo mode', 'Message added locally. The server was not reachable.');
+      setMessages(prev => prev.filter(item => item.id !== pendingMessage.id));
+      setMessage(trimmedMessage);
+      setAttachment(currentAttachment);
+      Alert.alert('Message not sent', 'Could not send this message to the server.');
     } finally {
       setIsSending(false);
     }
@@ -464,11 +479,12 @@ const ChatDetailScreen = ({ route }: any) => {
     const getChatMessages = async () => {
       try {
         const res = await api.get(`/chats/${contactId}/messages`);
-        if (Array.isArray(res.data.messages) && res.data.messages.length > 0) {
+        if (Array.isArray(res.data.messages)) {
           setMessages(res.data.messages);
         }
       } catch (err) {
         console.log(err);
+        setMessages([]);
       }
     };
 
@@ -503,7 +519,7 @@ const ChatDetailScreen = ({ route }: any) => {
 
     const unsubscribe = socketService.subscribe((data) => {
       if (data.action === 'new_message' && data.message.sender_id === contactId) {
-        setMessages(prev => [data.message, ...prev]);
+        upsertMessage(data.message);
       }
 
       if (data.action === 'presence_update' && data.user_id === contactId) {
@@ -521,9 +537,14 @@ const ChatDetailScreen = ({ route }: any) => {
 
     return () => {
       clearTimeout(typingTimer.current);
+      socketService.send({
+        action: 'typing',
+        receiver_id: contactId,
+        is_typing: false,
+      });
       unsubscribe();
     };
-  }, [contactId]);
+  }, [contactId, upsertMessage]);
 
   useLayoutEffect(() => {
     navigation.setOptions({

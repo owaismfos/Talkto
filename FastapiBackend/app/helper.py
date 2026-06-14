@@ -38,7 +38,7 @@ def verify_password(plain_password, hashed_password):
 
 
 def create_access_token(user_id: str, session_id: str) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(days=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     return jwt.encode(
         {"user_id": user_id, "session_id": session_id, "exp": expire},
         SECRET_KEY, algorithm=ALGORITHM
@@ -53,10 +53,8 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
 ):
     token = credentials.credentials  # extracts token from "Bearer <token>"
-    print("Received JWT token:", token)  # Debugging line
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        print("Decoded JWT payload:", payload)  # Debugging line
         user_id = payload.get("user_id")
         session_id = payload.get("session_id")
         if user_id is None or session_id is None:
@@ -68,7 +66,6 @@ def get_current_user(
         raise HTTPException(status_code=401, detail="Invalid token")
     
 def format_date(d):
-    print("date: ", d)
     today = date.today()
 
     if d == today:
@@ -88,9 +85,6 @@ def format_date_time(utc_time):
 
     ist_time = utc_time.astimezone(ZoneInfo("Asia/Kolkata"))
 
-    print("UTC:", utc_time)
-    print("IST:", ist_time)
-
     return f"{format_date(ist_time.date())} {format_time(ist_time)}"
     
 def add_chat_user(current_user_id: str, chat_user_id: str, db: Session):
@@ -106,10 +100,8 @@ def add_chat_user(current_user_id: str, chat_user_id: str, db: Session):
         (Contact.owner_id == current_user_id) & (Contact.contact_id == chat_user_id)
     ).first()
 
-    # Create a new chat entry for both users
     chat = Chat(owner_id=current_user_id, chat_user_id=chat_user_id, nickname=contact.nickname if contact else None)
     db.add(chat)
-    db.commit()
     
 
 def model_to_dict(obj):

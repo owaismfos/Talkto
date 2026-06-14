@@ -99,6 +99,31 @@ class MessageStatus(str, enum.Enum):
     read = "read"
 
 
+class StatusType(str, enum.Enum):
+    text = "text"
+    image = "image"
+    video = "video"
+
+
+class CallDirection(str, enum.Enum):
+    incoming = "incoming"
+    outgoing = "outgoing"
+    missed = "missed"
+
+
+class CallType(str, enum.Enum):
+    voice = "voice"
+    video = "video"
+
+
+class CallStatus(str, enum.Enum):
+    ringing = "ringing"
+    accepted = "accepted"
+    rejected = "rejected"
+    missed = "missed"
+    ended = "ended"
+
+
 class Message(Base):
     __tablename__ = "messages"
 
@@ -116,3 +141,50 @@ class Message(Base):
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     read_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class StatusUpdate(Base):
+    __tablename__ = "status_updates"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    content = Column(Text, nullable=True)
+    media_url = Column(Text, nullable=True)
+    status_type = Column(Enum(StatusType), default=StatusType.text)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+
+
+class CallHistory(Base):
+    __tablename__ = "call_history"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    owner_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    peer_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    peer_name = Column(String(100), nullable=True)
+    direction = Column(Enum(CallDirection), nullable=False)
+    call_type = Column(Enum(CallType), nullable=False)
+    status = Column(Enum(CallStatus), default=CallStatus.ringing)
+    duration_seconds = Column(Integer, default=0)
+    started_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    ended_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class Group(Base):
+    __tablename__ = "groups"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String(100), nullable=False)
+    description = Column(Text, nullable=True)
+    owner_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class GroupMember(Base):
+    __tablename__ = "group_members"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    group_id = Column(String(36), ForeignKey("groups.id"), nullable=False, index=True)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    role = Column(String(20), default="member")
+    joined_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

@@ -20,19 +20,21 @@ const AddContactScreen = ({ navigation }: any) => {
   const [isAdding, setIsAdding] = useState(false);
 
   const checkUser = async (value: string) => {
-    setNumber(value);
-    if (value.length < 10) {
+    const sanitizedValue = value.replace(/\s/g, '');
+    setNumber(sanitizedValue);
+    if (sanitizedValue.length < 10) {
       setIsValidUser(false);
       return;
     }
 
     setChecking(true);
     try {
-      const res = await api.get(`/check-user?phone=${value}`);
+      const res = await api.get(`/check-user?phone=${encodeURIComponent(sanitizedValue)}`);
       setIsValidUser(!!res.data.exists);
     } catch (err) {
       console.log('Error checking user:', err);
-      setIsValidUser(true);
+      setIsValidUser(false);
+      Alert.alert('Could not check user', 'Please try again when the server is reachable.');
     } finally {
       setChecking(false);
     }
@@ -48,8 +50,7 @@ const AddContactScreen = ({ navigation }: any) => {
       navigation.goBack();
     } catch (err) {
       console.log(err);
-      Alert.alert('Saved locally', 'Could not reach the server, but the frontend flow is ready.');
-      navigation.goBack();
+      Alert.alert('Contact not added', 'Could not save this contact on the server.');
     } finally {
       setIsAdding(false);
     }
@@ -91,7 +92,7 @@ const AddContactScreen = ({ navigation }: any) => {
       {checking ? <Text style={styles.helper}>Checking account availability...</Text> : null}
       {!checking && number.length >= 10 ? (
         <Text style={[styles.helper, { color: isValidUser ? WHATSAPP_COLORS.accent : WHATSAPP_COLORS.danger }]}>
-          {isValidUser ? 'User found or allowed for demo mode' : 'No matching user found'}
+          {isValidUser ? 'User found' : 'No matching user found'}
         </Text>
       ) : null}
 

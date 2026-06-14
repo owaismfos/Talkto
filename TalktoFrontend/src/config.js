@@ -1,7 +1,7 @@
 import { NativeModules, Platform } from 'react-native';
 
 const API_PORT = 8000;
-const LAN_API_HOST = '192.168.1.104';
+const LAN_API_HOST = '192.168.1.102';
 
 const getDevServerHost = () => {
   const scriptURL = NativeModules.SourceCode?.scriptURL;
@@ -14,7 +14,7 @@ const getDevServerHost = () => {
   return host;
 };
 
-const API_HOST = __DEV__ && Platform.OS !== 'android'
+const API_HOST = __DEV__
   ? getDevServerHost()
   : LAN_API_HOST;
 

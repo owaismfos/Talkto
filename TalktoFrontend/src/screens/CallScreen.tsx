@@ -23,6 +23,7 @@ import {
 import { WHATSAPP_COLORS } from '../services/colors';
 import { getInitials } from '../services/helper';
 import { socketService } from '../services/SocketService';
+import api from '../services/api';
 
 const rtcConfig = {
   iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
@@ -67,6 +68,9 @@ const CallScreen = ({ navigation, route }: any) => {
   const localStreamRef = useRef<MediaStream | null>(null);
   const pendingCandidatesRef = useRef<any[]>([]);
   const endedRef = useRef(false);
+  const callLogIdRef = useRef<string | null>(null);
+  const startedAtRef = useRef(new Date());
+  const durationRef = useRef(0);
   const incomingPulse = useRef(new Animated.Value(1)).current;
   const ringtoneRef = useRef<Sound | null>(null);
 
@@ -96,6 +100,46 @@ const CallScreen = ({ navigation, route }: any) => {
     pendingCandidatesRef.current = [];
   }, []);
 
+  const createCallLog = useCallback(
+    async (direction: 'incoming' | 'outgoing' | 'missed', status: 'ringing' | 'accepted' | 'rejected' | 'missed' | 'ended') => {
+      if (callLogIdRef.current) {
+        return;
+      }
+
+      try {
+        const res = await api.post('/calls', {
+          contact_id: contactId,
+          contact_name: contactName,
+          direction,
+          call_type: callType,
+          status,
+          duration_seconds: durationRef.current,
+          started_at: startedAtRef.current.toISOString(),
+        });
+        callLogIdRef.current = res.data.call?.id ?? null;
+      } catch (error) {
+        console.log('Unable to create call history:', error);
+      }
+    },
+    [callType, contactId, contactName],
+  );
+
+  const updateCallLog = useCallback(async (status: 'accepted' | 'rejected' | 'missed' | 'ended') => {
+    if (!callLogIdRef.current) {
+      return;
+    }
+
+    try {
+      await api.put(`/calls/${callLogIdRef.current}`, {
+        status,
+        duration_seconds: durationRef.current,
+        ended_at: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.log('Unable to update call history:', error);
+    }
+  }, []);
+
   const finishCall = useCallback(
     (notifyRemote = true) => {
       if (endedRef.current) {
@@ -106,12 +150,13 @@ const CallScreen = ({ navigation, route }: any) => {
       if (notifyRemote) {
         sendSignal({ action: 'call_end' });
       }
+      updateCallLog('ended');
       setCallState('ended');
       stopLocalStream();
       closePeer();
       navigation.goBack();
     },
-    [closePeer, navigation, sendSignal, stopLocalStream],
+    [closePeer, navigation, sendSignal, stopLocalStream, updateCallLog],
   );
 
   const applyPendingCandidates = useCallback(async () => {
@@ -191,13 +236,16 @@ const CallScreen = ({ navigation, route }: any) => {
 
   const acceptCall = useCallback(() => {
     setCallState('connecting');
+    createCallLog('incoming', 'accepted');
     sendSignal({ action: 'call_accept' });
-  }, [sendSignal]);
+  }, [createCallLog, sendSignal]);
 
   const rejectCall = useCallback(() => {
+    createCallLog('missed', 'rejected');
     sendSignal({ action: 'call_reject' });
+    updateCallLog('rejected');
     finishCall(false);
-  }, [finishCall, sendSignal]);
+  }, [createCallLog, finishCall, sendSignal, updateCallLog]);
 
   const handleOffer = useCallback(
     async (offer: any) => {
@@ -264,12 +312,13 @@ const CallScreen = ({ navigation, route }: any) => {
 
   useEffect(() => {
     if (mode === 'outgoing') {
+      createCallLog('outgoing', 'ringing');
       sendSignal({
         action: 'call_invite',
         caller_name: 'Talkto User',
       });
     }
-  }, [mode, sendSignal]);
+  }, [createCallLog, mode, sendSignal]);
 
   useEffect(() => {
     if (callState === 'incoming') {
@@ -356,11 +405,13 @@ const CallScreen = ({ navigation, route }: any) => {
       }
 
       if (data.action === 'call_accept') {
+        updateCallLog('accepted');
         startOffer();
       }
 
       if (data.action === 'call_reject') {
         Alert.alert('Call declined', `${contactName} declined the call.`);
+        updateCallLog('rejected');
         finishCall(false);
       }
 
@@ -382,14 +433,20 @@ const CallScreen = ({ navigation, route }: any) => {
     });
 
     return unsubscribe;
-  }, [contactId, contactName, finishCall, handleAnswer, handleIceCandidate, handleOffer, startOffer]);
+  }, [contactId, contactName, finishCall, handleAnswer, handleIceCandidate, handleOffer, startOffer, updateCallLog]);
 
   useEffect(() => {
     if (!isConnected) {
       return;
     }
 
-    const timer = setInterval(() => setDuration(prev => prev + 1), 1000);
+    const timer = setInterval(() => {
+      setDuration(prev => {
+        const nextDuration = prev + 1;
+        durationRef.current = nextDuration;
+        return nextDuration;
+      });
+    }, 1000);
     return () => clearInterval(timer);
   }, [isConnected]);
 
