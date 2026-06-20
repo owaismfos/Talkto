@@ -4,6 +4,24 @@ This is a new [**React Native**](https://reactnative.dev) project, bootstrapped 
 
 > **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
 
+## Android release setup for a local desktop backend
+
+To run the APK on a real Android phone and connect it to your local FastAPI server on your desktop:
+
+1. Start the backend on your desktop with:
+   ```sh
+   uvicorn app.main:app --host 0.0.0.0 --port 8000
+   ```
+2. Find your desktop's LAN IP address (for example `192.168.1.102`).
+3. Open [TalktoFrontend/src/config.js](TalktoFrontend/src/config.js) and update `DEFAULT_API_HOST` to that IP if needed.
+4. Build and install the Android release:
+   ```sh
+   cd TalktoFrontend
+   npm install
+   npx react-native run-android --variant=release
+   ```
+5. If the phone is on the same Wi‑Fi network, the app should call `http://<your-desktop-ip>:8000`.
+
 ## Step 1: Start Metro
 
 First, you will need to run **Metro**, the JavaScript build tool for React Native.
