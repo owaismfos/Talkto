@@ -15,6 +15,7 @@ import {
   HomeTabKey,
   mockSettings,
 } from '../data/mockAppData';
+import axios from 'axios';
 import { WHATSAPP_COLORS } from '../services/colors'
 
 import { CallItem, ChatPreview, CommunityItem, StatusUpdate } from '../services/interfaces'
@@ -27,6 +28,21 @@ import { useFocusEffect } from '@react-navigation/native';
 import { socketService } from '../services/SocketService';
 
 const TABS: HomeTabKey[] = ['Chats', 'Updates', 'Communities', 'Calls'];
+
+const getApiErrorMessage = (error: unknown) => {
+  if (axios.isAxiosError(error)) {
+    const detail = error.response?.data?.detail;
+    if (typeof detail === 'string') {
+      return detail;
+    }
+    if (detail) {
+      return JSON.stringify(detail);
+    }
+    return error.response ? `Server returned ${error.response.status}` : error.message;
+  }
+
+  return error instanceof Error ? error.message : 'Unexpected API error';
+};
 
 const HomeScreen = ({ navigation }: any) => {
   const [activeTab, setActiveTab] = useState<HomeTabKey>('Chats');
@@ -47,19 +63,41 @@ const HomeScreen = ({ navigation }: any) => {
       setIsLoadingHomeData(true);
     }
     try {
-      const [chatsRes, statusesRes, callsRes, groupsRes] = await Promise.all([
+      const [chatsRes, statusesRes, callsRes, groupsRes] = await Promise.allSettled([
         api.get('/chats/users'),
         api.get('/statuses'),
         api.get('/calls'),
         api.get('/groups'),
       ]);
-      setChatList(Array.isArray(chatsRes.data.users) ? chatsRes.data.users : []);
-      setStatuses(Array.isArray(statusesRes.data.statuses) ? statusesRes.data.statuses : []);
-      setCalls(Array.isArray(callsRes.data.calls) ? callsRes.data.calls : []);
-      setGroups(Array.isArray(groupsRes.data.groups) ? groupsRes.data.groups : []);
-    } catch (err) {
-      console.log(err);
-      Alert.alert('Server data unavailable', 'Could not load all home data from the server.');
+
+      if (chatsRes.status === 'fulfilled') {
+        setChatList(Array.isArray(chatsRes.value.data.users) ? chatsRes.value.data.users : []);
+      } else {
+        console.log('Chats API error:', getApiErrorMessage(chatsRes.reason), chatsRes.reason);
+        setChatList([]);
+        Alert.alert('Chats unavailable', getApiErrorMessage(chatsRes.reason));
+      }
+
+      if (statusesRes.status === 'fulfilled') {
+        setStatuses(Array.isArray(statusesRes.value.data.statuses) ? statusesRes.value.data.statuses : []);
+      } else {
+        console.log('Statuses API error:', getApiErrorMessage(statusesRes.reason), statusesRes.reason);
+        setStatuses([]);
+      }
+
+      if (callsRes.status === 'fulfilled') {
+        setCalls(Array.isArray(callsRes.value.data.calls) ? callsRes.value.data.calls : []);
+      } else {
+        console.log('Calls API error:', getApiErrorMessage(callsRes.reason), callsRes.reason);
+        setCalls([]);
+      }
+
+      if (groupsRes.status === 'fulfilled') {
+        setGroups(Array.isArray(groupsRes.value.data.groups) ? groupsRes.value.data.groups : []);
+      } else {
+        console.log('Groups API error:', getApiErrorMessage(groupsRes.reason), groupsRes.reason);
+        setGroups([]);
+      }
     } finally {
       if (showLoader) {
         setIsLoadingHomeData(false);

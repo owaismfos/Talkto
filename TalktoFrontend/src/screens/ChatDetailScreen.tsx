@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import axios from 'axios';
 import {
   Alert,
   ActivityIndicator,
@@ -55,6 +56,21 @@ interface AttachmentDraft {
 type ChatRow =
   | { type: 'message'; id: string; message: Message }
   | { type: 'date'; id: string; label: string };
+
+const getApiErrorMessage = (error: unknown) => {
+  if (axios.isAxiosError(error)) {
+    const detail = error.response?.data?.detail;
+    if (typeof detail === 'string') {
+      return detail;
+    }
+    if (detail) {
+      return JSON.stringify(detail);
+    }
+    return error.response ? `Server returned ${error.response.status}` : error.message;
+  }
+
+  return error instanceof Error ? error.message : 'Unexpected API error';
+};
 
 const getMessageDateKey = (date: string) => {
   const parsedDate = new Date(date);
@@ -450,11 +466,11 @@ const ChatDetailScreen = ({ route }: any) => {
         setMessages(prev => prev.map(item => item.id === pendingMessage.id ? res.data.chat_message : item));
       }
     } catch (err) {
-      console.log(err);
+      console.log('Send message API error:', getApiErrorMessage(err), err);
       setMessages(prev => prev.filter(item => item.id !== pendingMessage.id));
       setMessage(trimmedMessage);
       setAttachment(currentAttachment);
-      Alert.alert('Message not sent', 'Could not send this message to the server.');
+      Alert.alert('Message not sent', getApiErrorMessage(err));
     } finally {
       setIsSending(false);
     }
@@ -483,7 +499,7 @@ const ChatDetailScreen = ({ route }: any) => {
           setMessages(res.data.messages);
         }
       } catch (err) {
-        console.log(err);
+        console.log('Load messages API error:', getApiErrorMessage(err), err);
         setMessages([]);
       }
     };

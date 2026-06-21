@@ -265,9 +265,6 @@ async def root():
 @app.post("/auth/login")
 async def login(request: LoginRequest, db: Session = Depends(get_db)):
     try:
-        # time.sleep(5)  # Simulate processing delay (for testing)
-        # 1. Search for user
-        print("Attempting login for phone number:", request.phone_number)  # Debugging line
         user = db.query(User).filter(User.phone_number == request.phone_number).first()
 
         if not user:
@@ -522,49 +519,54 @@ def get_user_chats(
     current=Depends(get_current_user),
     db=Depends(get_db)
 ):
-    chats = db.query(Chat).filter(Chat.owner_id == current["user_id"]).all()
-    users = []
-    for chat in chats:
-        contact = db.query(Contact).filter(
-            Contact.owner_id == current["user_id"],
-            Contact.contact_id == chat.chat_user_id
-        ).first()
-        user = db.query(User).filter(User.id == chat.chat_user_id).first()
-        last_message = db.query(Message).filter(
-            or_(
-                (Message.sender_id == current["user_id"]) & (Message.receiver_id == chat.chat_user_id),
-                (Message.sender_id == chat.chat_user_id) & (Message.receiver_id == current["user_id"]),
+    try:    
+        chats = db.query(Chat).filter(Chat.owner_id == current["user_id"]).all()
+        users = []
+        for chat in chats:
+            contact = db.query(Contact).filter(
+                Contact.owner_id == current["user_id"],
+                Contact.contact_id == chat.chat_user_id
+            ).first()
+            user = db.query(User).filter(User.id == chat.chat_user_id).first()
+            last_message = db.query(Message).filter(
+                or_(
+                    (Message.sender_id == current["user_id"]) & (Message.receiver_id == chat.chat_user_id),
+                    (Message.sender_id == chat.chat_user_id) & (Message.receiver_id == current["user_id"]),
+                )
+            ).order_by(Message.created_at.desc()).first()
+            display_name = (
+                contact.nickname
+                if contact and contact.nickname
+                else chat.nickname
+                if chat.nickname
+                else user.phone_number
+                if user
+                else "Unknown"
             )
-        ).order_by(Message.created_at.desc()).first()
-        display_name = (
-            contact.nickname
-            if contact and contact.nickname
-            else chat.nickname
-            if chat.nickname
-            else user.phone_number
-            if user
-            else "Unknown"
+            users.append({
+                "id": chat.chat_user_id,
+                "name": display_name,
+                "status": "Available",  # Placeholder, you can enhance this to show actual status
+                "last_message": get_message_preview(last_message),
+                "last_message_time": format_date_time(last_message.created_at) if last_message else None,
+                "lastSeen": "Available",
+                "unreadCount": 0,
+                "time": format_date_time(last_message.created_at) if last_message else "",
+                "sort_time": isoformat(last_message.created_at) if last_message else None,
+                "_sort_time": last_message.created_at if last_message else None,
+            })
+        # Sort recent messages first
+        users.sort(
+            key=lambda x: x["_sort_time"].timestamp() if x["_sort_time"] else 0,
+            reverse=True
         )
-        users.append({
-            "id": chat.chat_user_id,
-            "name": display_name,
-            "status": "Available",  # Placeholder, you can enhance this to show actual status
-            "last_message": get_message_preview(last_message),
-            "last_message_time": format_date_time(last_message.created_at) if last_message else None,
-            "lastSeen": "Available",
-            "unreadCount": 0,
-            "time": format_date_time(last_message.created_at) if last_message else "",
-            "sort_time": isoformat(last_message.created_at) if last_message else None,
-            "_sort_time": last_message.created_at if last_message else None,
-        })
-    # Sort recent messages first
-    users.sort(
-        key=lambda x: x["_sort_time"].timestamp() if x["_sort_time"] else 0,
-        reverse=True
-    )
-    for user in users:
-        user.pop("_sort_time", None)
-    return {"users": users}
+        for user in users:
+            user.pop("_sort_time", None)
+        return {"users": users}
+
+    except Exception as e:
+        # db.rollback() # Important to rollback on DB errors
+        raise HTTPException(status_code=500, detail= str(e))
 
 
 @app.get("/statuses")
@@ -919,44 +921,48 @@ async def post_message(
     current=Depends(get_current_user),
     db=Depends(get_db)
 ):
-    data = await req.json()
-    receiver = db.query(User).filter(User.id == contact_id).first()
-    if not receiver:
-        raise HTTPException(status_code=404, detail="Recipient not found")
+    try:
+        data = await req.json()
+        receiver = db.query(User).filter(User.id == contact_id).first()
+        if not receiver:
+            raise HTTPException(status_code=404, detail="Recipient not found")
 
-    content = (data.get("content") or "").strip() or None
-    media_url = data.get("media_url")
-    msg_type = data.get("msg_type", "text")
-    allowed_message_types = {item.value for item in MessageType}
-    if msg_type not in allowed_message_types:
-        raise HTTPException(status_code=400, detail="Unsupported message type")
-    if msg_type == "text" and media_url:
-        msg_type = get_message_type(data.get("content_type"))
-    if not content and not media_url:
-        raise HTTPException(status_code=400, detail="Message content or media is required")
+        content = (data.get("content") or "").strip() or None
+        media_url = data.get("media_url")
+        msg_type = data.get("msg_type", "text")
+        allowed_message_types = {item.value for item in MessageType}
+        if msg_type not in allowed_message_types:
+            raise HTTPException(status_code=400, detail="Unsupported message type")
+        if msg_type == "text" and media_url:
+            msg_type = get_message_type(data.get("content_type"))
+        if not content and not media_url:
+            raise HTTPException(status_code=400, detail="Message content or media is required")
 
-    new_message = Message(
-        sender_id=current["user_id"],
-        receiver_id=contact_id,
-        content=content,
-        msg_type=MessageType(msg_type),
-        media_url=media_url,
-        status="sent"
-    )
-    db.add(new_message)
-    add_chat_user(current["user_id"], contact_id, db)
-    add_chat_user(contact_id, current["user_id"], db)
+        new_message = Message(
+            sender_id=current["user_id"],
+            receiver_id=contact_id,
+            content=content,
+            msg_type=MessageType(msg_type),
+            media_url=media_url,
+            status="sent"
+        )
+        db.add(new_message)
+        add_chat_user(current["user_id"], contact_id, db)
+        add_chat_user(contact_id, current["user_id"], db)
 
-    db.commit()
-    db.refresh(new_message)
-    receiver_id = new_message.receiver_id
-    message = serialize_message(new_message, current["user_id"])
-    receiver_message = serialize_message(new_message, receiver_id)
+        db.commit()
+        db.refresh(new_message)
+        receiver_id = new_message.receiver_id
+        message = serialize_message(new_message, current["user_id"])
+        receiver_message = serialize_message(new_message, receiver_id)
 
-    response = {"action": "new_message", "message": receiver_message}
-    await manager.send_personal_message(response, receiver_id)
+        response = {"action": "new_message", "message": receiver_message}
+        await manager.send_personal_message(response, receiver_id)
 
-    return {"message": "Message sent successfully", "message_id": new_message.id, "chat_message": message}
+        return {"message": "Message sent successfully", "message_id": new_message.id, "chat_message": message}
+    except Exception as e:
+        db.rollback() # Important to rollback on DB errors
+        raise HTTPException(status_code=500, detail= str(e))
 
 @app.get("/check-user")
 def check_user(phone: str, db: Session = Depends(get_db)):
