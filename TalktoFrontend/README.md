@@ -13,14 +13,15 @@ To run the APK on a real Android phone and connect it to your local FastAPI serv
    uvicorn app.main:app --host 0.0.0.0 --port 8000
    ```
 2. Find your desktop's LAN IP address (for example `192.168.1.102`).
-3. Open [TalktoFrontend/src/config.js](TalktoFrontend/src/config.js) and update `DEFAULT_API_HOST` to that IP if needed.
-4. Build and install the Android release:
+3. If you use a domain instead of an IP, set `API_BASE_URL` to something like `https://api.yourdomain.com` (or `http://your-domain:8000`).
+4. Open [TalktoFrontend/src/config.js](TalktoFrontend/src/config.js) and update the base URL logic if needed.
+5. Build and install the Android release:
    ```sh
    cd TalktoFrontend
    npm install
    npx react-native run-android --variant=release
    ```
-5. If the phone is on the same Wi‑Fi network, the app should call `http://<your-desktop-ip>:8000`.
+6. If the phone is on the same Wi‑Fi network, the app should call `http://<your-desktop-ip>:8000`.
 
 ## Step 1: Start Metro
 

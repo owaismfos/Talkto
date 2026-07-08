@@ -4,8 +4,8 @@
 .gitroot/
 
 # Local notes / setup commands
-FastapiBackend/TableQueries.sql
-FastapiBackend/Tcommands.txt
+# FastapiBackend/TableQueries.sql
+# FastapiBackend/Tcommands.txt
 
 # Python
 **/venv/

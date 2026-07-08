@@ -1,0 +1,60 @@
+convert src/assets/talkto-logo.png -resize 48x48   android/app/src/main
+/res/mipmap-mdpi/ic_launcher.png && convert src/assets/talkto-logo.png -resize 72x72   android/app/src/main/res/mip
+map-hdpi/ic_launcher.png && convert src/assets/talkto-logo.png -resize 96x96   android/app/src/main/res/mipmap-xhdp
+i/ic_launcher.png && convert src/assets/talkto-logo.png -resize 144x144 android/app/src/main/res/mipmap-xxhdpi/ic_l
+auncher.png && convert src/assets/talkto-logo.png -resize 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launch
+er.png && echo "✅ All icons generated!"
+
+
+
+convert src/assets/talkto-logo.png -resize 48x48 android/app/src/main/res/mipmap-mdpi/ic_launcher.png && convert src/assets/talkto-logo.png -resize 72x72 android/app/src/main/res/mipmap-hdpi/ic_launcher.png && convert src/assets/talkto-logo.png -resize 96x96 android/app/src/main/res/mipmap-xhdpi/ic_launcher.png && convert src/assets/talkto-logo.png -resize 144x144 android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png && convert src/assets/talkto-logo.png -resize 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png && echo "✅ All icons generated!"
+
+
+
+nano ~/.bashrc
+---Scroll to the very bottom and paste this line:
+export PATH="$HOME/Android/Sdk/platform-tools:$PATH"
+source ~/.bashrc
+adb --version
+
+adb pair 192.168.1.100:33947
+
+adb pair 192.168.1.103:39719
+
+Connect to the device
+Now, look at the main Wireless Debugging screen (not the pairing popup). Use the "IP address & Port" shown there. Note: The port is usually different from the pairing port.
+adb connect [IP_ADDRESS]:[PORT]
+adb connect 192.168.1.103:46379
+
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+adb devices
+ ip addr show
+
+###scrcpy --serial 192.168.1.100:38501
+
+scrcpy --serial 192.168.1.103:46379
+
+
+ip addr show | grep "inet " | grep -v 127.0.0.1
+
+cd android
+./gradlew clean
+./gradlew assembleRelease
+
+call receive event
+{
+  "action": "call_accept",
+  "receiver_id": "075b53a9-b255-4815-8b23-a0b70623d598",
+  "call_type": "voice"
+}
+
+public ip 51.21.244.195/ 13.61.13.83
+private ip : 172.31.26.216
+
+password: {O77=p4T8n7v
+user: talktoapi
+
+login: ssh -i Talkto.pem ubuntu@51.21.244.195
+
+logs check: sudo journalctl -u fastapi -f
