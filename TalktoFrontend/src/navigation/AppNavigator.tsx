@@ -71,7 +71,9 @@ export const AppNavigator = () => {
         </Stack.Screen>
       ) : (
         <>
-          <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Home" options={{ headerShown: false }}>
+            {props => <HomeScreen {...props} onLogout={handleLogout} />}
+          </Stack.Screen>
           <Stack.Screen
             name="ChatDetail"
             component={ChatDetailScreen}

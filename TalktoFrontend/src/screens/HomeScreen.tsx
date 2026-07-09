@@ -1,8 +1,9 @@
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -44,7 +45,7 @@ const getApiErrorMessage = (error: unknown) => {
   return error instanceof Error ? error.message : 'Unexpected API error';
 };
 
-const HomeScreen = ({ navigation }: any) => {
+const HomeScreen = ({ navigation, onLogout }: any) => {
   const [activeTab, setActiveTab] = useState<HomeTabKey>('Chats');
   const [chatList, setChatList] = useState<ChatPreview[]>([]);
   const [statuses, setStatuses] = useState<StatusUpdate[]>([]);
@@ -57,6 +58,7 @@ const HomeScreen = ({ navigation }: any) => {
   const [isCreatingStatus, setIsCreatingStatus] = useState(false);
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [isLoadingHomeData, setIsLoadingHomeData] = useState(false);
+  const [isMenuVisible, setIsMenuVisible] = useState(false);
 
   const loadHomeData = useCallback(async (showLoader = true) => {
     if (showLoader) {
@@ -105,15 +107,26 @@ const HomeScreen = ({ navigation }: any) => {
     }
   }, []);
 
-  const headerAction = useMemo(() => {
-    if (activeTab === 'Chats') {
-      return { label: 'New chat', route: 'NewChat' };
-    }
-    if (activeTab === 'Calls') {
-      return { label: 'New call', route: 'NewCall' };
-    }
-    return { label: 'Settings', route: 'Settings' };
-  }, [activeTab]);
+  const handleNewContact = () => {
+    setIsMenuVisible(false);
+    navigation.navigate('AddContact');
+  };
+
+  const handleLogout = () => {
+    Alert.alert('Logout', 'Do you want to sign out from this device?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => {
+          await Keychain.resetGenericPassword();
+          if (onLogout) {
+            await onLogout();
+          }
+        },
+      },
+    ]);
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -372,13 +385,28 @@ const HomeScreen = ({ navigation }: any) => {
           <Text style={styles.brand}>Talkto</Text>
           {/* <Text style={styles.headerSubtitle}>WhatsApp-style frontend</Text> */}
         </View>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity style={styles.headerButton} onPress={() => navigation.navigate(headerAction.route)}>
-            <Text style={styles.headerButtonText}>{headerAction.label}</Text>
+        <View style={styles.headerActionWrapper}>
+          <TouchableOpacity
+            style={styles.headerMenuButton}
+            onPress={() => setIsMenuVisible(prev => !prev)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.headerMenuIcon}>⋮</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerButton} onPress={() => navigation.navigate('Settings')}>
-            <Text style={styles.headerButtonText}>Menu</Text>
-          </TouchableOpacity>
+          {isMenuVisible ? (
+            <View style={styles.menuLayer}>
+              <Pressable style={styles.menuBackdrop} onPress={() => setIsMenuVisible(false)} />
+              <View style={styles.dropdownMenu}>
+                <TouchableOpacity style={styles.menuItem} onPress={handleNewContact}>
+                  <Text style={styles.menuItemText}>New Contact</Text>
+                </TouchableOpacity>
+                <View style={styles.menuDivider} />
+                <TouchableOpacity style={[styles.menuItem, styles.logoutMenuItem]} onPress={handleLogout}>
+                  <Text style={[styles.menuItemText, styles.logoutText]}>Logout</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : null}
         </View>
       </View>
       <View style={styles.content}>{renderContent()}</View>
@@ -410,6 +438,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    position: 'relative',
+    zIndex: 20,
   },
   brand: {
     color: '#FFFFFF',
@@ -421,19 +451,69 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 4,
   },
-  headerButtons: {
-    flexDirection: 'row',
-    gap: 8,
+  headerActionWrapper: {
+    position: 'relative',
   },
-  headerButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 14,
+  headerMenuButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  headerButtonText: {
+  headerMenuIcon: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 24,
+    fontWeight: '700',
+    lineHeight: 24,
+  },
+  menuLayer: {
+    position: 'absolute',
+    top: 46,
+    right: 0,
+    width: 220,
+    zIndex: 30,
+  },
+  menuBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: -400,
+    backgroundColor: 'transparent',
+  },
+  dropdownMenu: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: WHATSAPP_COLORS.border,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  menuItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  menuItemText: {
+    color: WHATSAPP_COLORS.text,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: WHATSAPP_COLORS.border,
+    marginVertical: 4,
+  },
+  logoutMenuItem: {
+    marginTop: 2,
+  },
+  logoutText: {
+    color: WHATSAPP_COLORS.danger,
     fontWeight: '700',
   },
   content: {

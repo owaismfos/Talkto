@@ -50,9 +50,11 @@ class ConnectionManager:
         db.commit()
         return now
 
-    async def send_personal_message(self, message: dict, user_id: str):
+    async def send_personal_message(self, message: dict, user_id: str) -> bool:
         if user_id in self.active_connections:
             await self.active_connections[user_id].send_json(message)
+            return True
+        return False
 
     async def broadcast(self, message: dict):
     # Create a list of "tasks" for every connection

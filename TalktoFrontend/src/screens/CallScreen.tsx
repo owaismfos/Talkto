@@ -60,6 +60,7 @@ const CallScreen = ({ navigation, route }: any) => {
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(callType === 'video');
+  const [screenMessage, setScreenMessage] = useState<string | null>(null);
   const [callState, setCallState] = useState<'incoming' | 'calling' | 'connecting' | 'connected' | 'ended'>(
     mode === 'incoming' ? 'incoming' : 'calling',
   );
@@ -73,6 +74,7 @@ const CallScreen = ({ navigation, route }: any) => {
   const durationRef = useRef(0);
   const incomingPulse = useRef(new Animated.Value(1)).current;
   const ringtoneRef = useRef<Sound | null>(null);
+  const ringbackRef = useRef<Sound | null>(null);
 
   const isVideoCall = callType === 'video';
   const isIncoming = callState === 'incoming';
@@ -141,7 +143,7 @@ const CallScreen = ({ navigation, route }: any) => {
   }, []);
 
   const finishCall = useCallback(
-    (notifyRemote = true) => {
+    (notifyRemote = true, status: 'accepted' | 'rejected' | 'missed' | 'ended' = 'ended') => {
       if (endedRef.current) {
         return;
       }
@@ -150,7 +152,7 @@ const CallScreen = ({ navigation, route }: any) => {
       if (notifyRemote) {
         sendSignal({ action: 'call_end' });
       }
-      updateCallLog('ended');
+      updateCallLog(status);
       setCallState('ended');
       stopLocalStream();
       closePeer();
@@ -242,10 +244,10 @@ const CallScreen = ({ navigation, route }: any) => {
 
   const rejectCall = useCallback(() => {
     createCallLog('missed', 'rejected');
+    setScreenMessage('Call declined');
     sendSignal({ action: 'call_reject' });
-    updateCallLog('rejected');
-    finishCall(false);
-  }, [createCallLog, finishCall, sendSignal, updateCallLog]);
+    finishCall(false, 'rejected');
+  }, [createCallLog, finishCall, sendSignal]);
 
   const handleOffer = useCallback(
     async (offer: any) => {
@@ -312,13 +314,14 @@ const CallScreen = ({ navigation, route }: any) => {
 
   useEffect(() => {
     if (mode === 'outgoing') {
+      setScreenMessage(null);
       createCallLog('outgoing', 'ringing');
       sendSignal({
         action: 'call_invite',
-        caller_name: 'Talkto User',
+        caller_name: contactName,
       });
     }
-  }, [createCallLog, mode, sendSignal]);
+  }, [contactName, createCallLog, mode, sendSignal]);
 
   useEffect(() => {
     if (callState === 'incoming') {
@@ -369,6 +372,44 @@ const CallScreen = ({ navigation, route }: any) => {
   }, [callState]);
 
   useEffect(() => {
+    const stopRingback = () => {
+      ringbackRef.current?.stop(() => {
+        ringbackRef.current?.release();
+        ringbackRef.current = null;
+      });
+    };
+
+    if (mode !== 'outgoing' || callState !== 'calling') {
+      stopRingback();
+      return undefined;
+    }
+
+    let isActive = true;
+    stopRingback();
+
+    const ringback = new Sound('incoming_call.wav', Sound.MAIN_BUNDLE, (error) => {
+      if (error) {
+        console.log('Unable to load outgoing call ringback:', error);
+        return;
+      }
+
+      if (!isActive) {
+        ringback.release();
+        return;
+      }
+
+      ringback.setNumberOfLoops(-1);
+      ringback.play();
+      ringbackRef.current = ringback;
+    });
+
+    return () => {
+      isActive = false;
+      stopRingback();
+    };
+  }, [callState, mode]);
+
+  useEffect(() => {
     if (callState !== 'incoming') {
       incomingPulse.stopAnimation();
       incomingPulse.setValue(1);
@@ -405,14 +446,21 @@ const CallScreen = ({ navigation, route }: any) => {
       }
 
       if (data.action === 'call_accept') {
+        setScreenMessage(null);
         updateCallLog('accepted');
         startOffer();
       }
 
       if (data.action === 'call_reject') {
+        setScreenMessage(`${contactName} declined the call.`);
         Alert.alert('Call declined', `${contactName} declined the call.`);
-        updateCallLog('rejected');
-        finishCall(false);
+        finishCall(false, 'rejected');
+      }
+
+      if (data.action === 'call_not_reachable') {
+        setScreenMessage('Not reachable');
+        Alert.alert('Not reachable', `${contactName} is not reachable right now.`);
+        finishCall(false, 'missed');
       }
 
       if (data.action === 'call_offer') {
@@ -428,7 +476,8 @@ const CallScreen = ({ navigation, route }: any) => {
       }
 
       if (data.action === 'call_end') {
-        finishCall(false);
+        setScreenMessage('Call ended');
+        finishCall(false, 'ended');
       }
     });
 
@@ -451,6 +500,24 @@ const CallScreen = ({ navigation, route }: any) => {
   }, [isConnected]);
 
   useEffect(() => {
+    if (mode !== 'outgoing' || !['calling', 'connecting'].includes(callState)) {
+      return undefined;
+    }
+
+    const timeoutId = setTimeout(() => {
+      if (endedRef.current) {
+        return;
+      }
+
+      setScreenMessage('Not reachable');
+      Alert.alert('Not reachable', `${contactName} is not reachable right now.`);
+      finishCall(false, 'missed');
+    }, 20000);
+
+    return () => clearTimeout(timeoutId);
+  }, [callState, contactName, finishCall, mode]);
+
+  useEffect(() => {
     return () => {
       stopLocalStream();
       closePeer();
@@ -458,11 +525,14 @@ const CallScreen = ({ navigation, route }: any) => {
   }, [closePeer, stopLocalStream]);
 
   const callStatus = useMemo(() => {
+    if (screenMessage) {
+      return screenMessage;
+    }
     if (callState === 'incoming') {
       return isVideoCall ? 'Incoming video call' : 'Incoming voice call';
     }
     if (callState === 'calling') {
-      return isVideoCall ? 'Video calling...' : 'Calling...';
+      return isVideoCall ? 'Ringing on their phone...' : 'Ringing...';
     }
     if (callState === 'connecting') {
       return 'Connecting...';

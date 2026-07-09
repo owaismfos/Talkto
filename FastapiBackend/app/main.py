@@ -443,6 +443,7 @@ async def contacts_post(
     # print("Received contact data:", await req.body())  # Debugging line to check incoming data
     # time.sleep(2)  # Simulate processing delay (for testing)
     data = await req.json()
+    print(data)
     contact_number = (data.get("contact_number") or "").strip()
     nickname = (data.get("nickname") or "").strip()
     if not contact_number:
@@ -452,7 +453,7 @@ async def contacts_post(
 
     user = db.query(User).filter(User.phone_number == contact_number).first()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=400, detail="User not found")
     if user.id == current["user_id"]:
         raise HTTPException(status_code=400, detail="You cannot add yourself as a contact")
     
@@ -999,10 +1000,17 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str, db: Session = D
                 "ice_candidate",
                 "call_end",
             ] and receiver_id:
-                await manager.send_personal_message({
+                delivered = await manager.send_personal_message({
                     **data,
                     "sender_id": user_id,
                 }, receiver_id)
+                if not delivered and action == "call_invite":
+                    await manager.send_personal_message({
+                        "action": "call_not_reachable",
+                        "sender_id": user_id,
+                        "receiver_id": receiver_id,
+                        "contact_name": data.get("caller_name") or "Contact",
+                    }, user_id)
             # Process data if needed
     except WebSocketDisconnect:
         print(f"WebSocket disconnected for user_id: {user_id}")  # Debugging line
