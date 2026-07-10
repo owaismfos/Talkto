@@ -21,9 +21,10 @@ import {
   RTCSessionDescription,
 } from 'react-native-webrtc';
 import { WHATSAPP_COLORS } from '../services/colors';
-import { getInitials } from '../services/helper';
+import { getContactDisplayName, getInitials } from '../services/helper';
 import { socketService } from '../services/SocketService';
 import api from '../services/api';
+import { getSelectedRingtone, setSelectedRingtone } from '../services/preferences';
 
 const rtcConfig = {
   iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
@@ -64,6 +65,8 @@ const CallScreen = ({ navigation, route }: any) => {
   const [callState, setCallState] = useState<'incoming' | 'calling' | 'connecting' | 'connected' | 'ended'>(
     mode === 'incoming' ? 'incoming' : 'calling',
   );
+  const [selectedRingtone, setSelectedRingtoneState] = useState('default');
+  const [isRingtoneMenuOpen, setIsRingtoneMenuOpen] = useState(false);
 
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -79,6 +82,7 @@ const CallScreen = ({ navigation, route }: any) => {
   const isVideoCall = callType === 'video';
   const isIncoming = callState === 'incoming';
   const isConnected = callState === 'connected';
+  const displayName = useMemo(() => getContactDisplayName({ nickname: contactName, phoneNumber: contactId }, 'Unknown contact'), [contactId, contactName]);
 
   const sendSignal = useCallback(
     (payload: Record<string, unknown>) => {
@@ -90,6 +94,24 @@ const CallScreen = ({ navigation, route }: any) => {
     },
     [callType, contactId],
   );
+
+  const loadRingtonePreference = useCallback(async () => {
+    const storedRingtone = await getSelectedRingtone();
+    setSelectedRingtoneState(storedRingtone);
+  }, []);
+
+  const pickRingtone = useCallback(async (value: string) => {
+    setSelectedRingtoneState(value);
+    await setSelectedRingtone(value);
+    setIsRingtoneMenuOpen(false);
+  }, []);
+
+  const resolveRingtoneFile = useCallback((value: string) => {
+    if (value === 'default' || value === 'classic' || value === 'soft' || value === 'bright' || value === 'pulse') {
+      return 'incoming_call.wav';
+    }
+    return 'incoming_call.wav';
+  }, []);
 
   const stopLocalStream = useCallback(() => {
     localStreamRef.current?.getTracks().forEach(track => track.stop());
@@ -349,7 +371,8 @@ const CallScreen = ({ navigation, route }: any) => {
     let isActive = true;
     stopRingtone();
 
-    const ringtone = new Sound('incoming_call.wav', Sound.MAIN_BUNDLE, (error) => {
+    const ringtoneName = resolveRingtoneFile(selectedRingtone);
+    const ringtone = new Sound(ringtoneName, Sound.MAIN_BUNDLE, (error) => {
       if (error) {
         console.log('Unable to load incoming call ringtone:', error);
         return;
@@ -369,7 +392,7 @@ const CallScreen = ({ navigation, route }: any) => {
       isActive = false;
       stopRingtone();
     };
-  }, [callState]);
+  }, [callState, resolveRingtoneFile, selectedRingtone]);
 
   useEffect(() => {
     const stopRingback = () => {
@@ -545,6 +568,10 @@ const CallScreen = ({ navigation, route }: any) => {
 
   return (
     <SafeAreaView style={[styles.container, isVideoCall && styles.videoContainer]}>
+      <TouchableOpacity style={styles.ringtoneButton} onPress={() => setIsRingtoneMenuOpen(true)}>
+        <Icon name="music-note-outline" size={20} color={WHATSAPP_COLORS.brand} />
+        <Text style={styles.ringtoneButtonText}>Ringtone: {selectedRingtone === 'default' ? 'Default' : selectedRingtone}</Text>
+      </TouchableOpacity>
       <View style={styles.stage}>
         {isVideoCall && isCameraOn ? (
           <View style={styles.videoStage}>
@@ -561,7 +588,7 @@ const CallScreen = ({ navigation, route }: any) => {
           </View>
         )}
 
-        <Text style={styles.contactName}>{contactName}</Text>
+        <Text style={styles.contactName}>{displayName}</Text>
         <Text style={styles.callStatus}>{callStatus}</Text>
       </View>
 
@@ -629,6 +656,25 @@ const CallScreen = ({ navigation, route }: any) => {
           </TouchableOpacity>
         </View>
       )}
+      {isRingtoneMenuOpen ? (
+        <View style={styles.ringtoneMenu}>
+          <TouchableOpacity style={styles.ringtoneOption} onPress={() => pickRingtone('default')}>
+            <Text style={styles.ringtoneOptionText}>Default ringtone</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.ringtoneOption} onPress={() => pickRingtone('classic')}>
+            <Text style={styles.ringtoneOptionText}>Classic tone</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.ringtoneOption} onPress={() => pickRingtone('soft')}>
+            <Text style={styles.ringtoneOptionText}>Soft tone</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.ringtoneOption} onPress={() => pickRingtone('bright')}>
+            <Text style={styles.ringtoneOptionText}>Bright tone</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.ringtoneOption} onPress={() => pickRingtone('pulse')}>
+            <Text style={styles.ringtoneOptionText}>Pulse tone</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 };
@@ -695,6 +741,44 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     textAlign: 'center',
     marginBottom: 8,
+  },
+  ringtoneButton: {
+    alignSelf: 'flex-end',
+    marginRight: 16,
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: '#FFFFFF',
+  },
+  ringtoneButtonText: {
+    color: WHATSAPP_COLORS.text,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  ringtoneMenu: {
+    position: 'absolute',
+    top: 56,
+    right: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: WHATSAPP_COLORS.border,
+    paddingVertical: 6,
+    width: 180,
+    zIndex: 20,
+  },
+  ringtoneOption: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  ringtoneOptionText: {
+    color: WHATSAPP_COLORS.text,
+    fontSize: 13,
+    fontWeight: '600',
   },
   callStatus: {
     color: 'rgba(255,255,255,0.78)',

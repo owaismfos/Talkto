@@ -168,6 +168,13 @@ const ChatDetailScreen = ({ route }: any) => {
     [contactId, contactName, navigation],
   );
 
+  const saveContact = useCallback(() => {
+    navigation.navigate('AddContact', {
+      phoneNumber: contactId,
+      initialName: contactName,
+    });
+  }, [contactId, contactName, navigation]);
+
   const getAttachmentType = (mimeType: string | null): Message['msg_type'] => {
     if (mimeType?.startsWith('image/')) {
       return 'image';
@@ -580,6 +587,14 @@ const ChatDetailScreen = ({ route }: any) => {
       ),
       headerRight: () => (
         <View style={styles.headerActions}>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Save contact"
+            style={styles.headerIconButton}
+            onPress={saveContact}
+          >
+            <Icon name="account-plus" size={22} color="#FFFFFF" />
+          </TouchableOpacity>
           <TouchableOpacity
             accessibilityRole="button"
             accessibilityLabel={`Start video call with ${contactName}`}

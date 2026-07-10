@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Talkto Web</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <h1>Talkto Web</h1>
+          <p>Lightweight browser frontend for your FastAPI backend</p>
+        </div>
+        <div class="topbar-actions">
+          <label class="api-url">
+            <span>API Base URL</span>
+            <input id="apiBaseUrl" type="text" value="http://127.0.0.1:8000" />
+          </label>
+          <button id="saveBaseUrl" type="button">Save</button>
+        </div>
+      </header>
+
+      <main class="content">
+        <section class="card auth-card">
+          <h2>Sign in</h2>
+          <form id="loginForm" class="stack-form">
+            <input name="phone_number" type="text" placeholder="Phone number" required />
+            <input name="password" type="password" placeholder="Password" required />
+            <input name="device_id" type="text" placeholder="Device ID" value="web-browser" required />
+            <input name="device_name" type="text" placeholder="Device name" value="Browser" required />
+            <input name="fcm_token" type="text" placeholder="FCM token (optional)" />
+            <button type="submit">Login / Register</button>
+          </form>
+          <p id="authMessage" class="message"></p>
+        </section>
+
+        <section id="dashboard" class="card dashboard-card" hidden>
+          <div class="dashboard-header">
+            <div>
+              <h2>Dashboard</h2>
+              <p id="userLabel">Signed in</p>
+            </div>
+            <button id="logoutBtn" type="button">Log out</button>
+          </div>
+
+          <nav class="tabs" aria-label="Main sections">
+            <button data-view="contacts" class="tab-btn active" type="button">Contacts</button>
+            <button data-view="chats" class="tab-btn" type="button">Chats</button>
+            <button data-view="statuses" class="tab-btn" type="button">Statuses</button>
+            <button data-view="calls" class="tab-btn" type="button">Calls</button>
+            <button data-view="groups" class="tab-btn" type="button">Groups</button>
+          </nav>
+
+          <div id="viewContent" class="view-content"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -11,6 +11,24 @@ export const getInitials = (value: string) =>
     .map(part => part[0]?.toUpperCase() ?? '')
     .join('');
 
+export const getContactDisplayName = (
+  contact: { nickname?: string; name?: string; phoneNumber?: string } | null | undefined,
+  fallback = 'Unknown contact',
+) => {
+  if (contact?.nickname) {
+    return contact.nickname;
+  }
+
+  if (contact?.name) {
+    return contact.name;
+  }
+
+  if (contact?.phoneNumber) {
+    return contact.phoneNumber;
+  }
+
+  return fallback;
+};
 
 export const getAvatarColor = (text: string) => {
   let hash = 0;

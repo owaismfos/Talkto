@@ -3,6 +3,9 @@ import {
   ActivityIndicator,
   Alert,
   BackHandler,
+  PermissionsAndroid,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -11,13 +14,16 @@ import {
 } from 'react-native';
 import api from '../services/api';
 import { WHATSAPP_COLORS } from '../services/colors';
+import Contacts from 'react-native-contacts';
 
-const AddContactScreen = ({ navigation }: any) => {
-  const [number, setNumber] = useState('');
-  const [nickname, setNickname] = useState('');
+const AddContactScreen = ({ navigation, route }: any) => {
+  const [number, setNumber] = useState(route?.params?.phoneNumber ?? '');
+  const [nickname, setNickname] = useState(route?.params?.initialName ?? '');
   const [isValidUser, setIsValidUser] = useState(false);
   const [checking, setChecking] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [deviceContacts, setDeviceContacts] = useState<any[]>([]);
+  const [isLoadingContacts, setIsLoadingContacts] = useState(false);
 
   const checkUser = async (value: string) => {
     const sanitizedValue = value.replace(/\s/g, '');
@@ -56,6 +62,31 @@ const AddContactScreen = ({ navigation }: any) => {
     }
   };
 
+  const loadDeviceContacts = async () => {
+    setIsLoadingContacts(true);
+    try {
+      if (Platform.OS === 'android') {
+        const result = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.READ_CONTACTS);
+        if (result !== PermissionsAndroid.RESULTS.GRANTED) {
+          setDeviceContacts([]);
+          return;
+        }
+      }
+
+      const contacts = await Contacts.getAll();
+      setDeviceContacts(contacts.slice(0, 12));
+    } catch (err) {
+      console.log(err);
+      Alert.alert('Contacts unavailable', 'Could not read contacts from your phone.');
+    } finally {
+      setIsLoadingContacts(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDeviceContacts();
+  }, []);
+
   useEffect(() => {
     const backAction = () => {
       if (number || nickname) {
@@ -73,10 +104,10 @@ const AddContactScreen = ({ navigation }: any) => {
   }, [navigation, nickname, number]);
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.hero}>
         <Text style={styles.heroTitle}>Add a new contact</Text>
-        <Text style={styles.heroText}>This frontend screen matches the usual WhatsApp add-contact flow.</Text>
+        <Text style={styles.heroText}>Pick from your phone contacts or enter a number manually.</Text>
       </View>
 
       <Text style={styles.label}>Phone number</Text>
@@ -105,6 +136,30 @@ const AddContactScreen = ({ navigation }: any) => {
         placeholderTextColor="#98A2B3"
       />
 
+      <Text style={styles.label}>Phone contacts</Text>
+      {isLoadingContacts ? <Text style={styles.helper}>Loading contacts...</Text> : null}
+      {deviceContacts.map(contact => {
+        const phoneNumber = contact.phoneNumbers?.[0]?.number;
+        if (!phoneNumber) {
+          return null;
+        }
+
+        return (
+          <TouchableOpacity
+            key={`${contact.recordID}-${phoneNumber}`}
+            style={styles.contactOption}
+            onPress={() => {
+              setNumber(phoneNumber.replace(/\D/g, ''));
+              setNickname(contact.displayName || contact.givenName || 'Contact');
+              checkUser(phoneNumber.replace(/\D/g, ''));
+            }}
+          >
+            <Text style={styles.contactOptionTitle}>{contact.displayName || contact.givenName || 'Contact'}</Text>
+            <Text style={styles.contactOptionSubtitle}>{phoneNumber}</Text>
+          </TouchableOpacity>
+        );
+      })}
+
       <TouchableOpacity
         style={[styles.button, (!isValidUser || !nickname || checking || isAdding) && styles.buttonDisabled]}
         onPress={addContact}
@@ -116,15 +171,18 @@ const AddContactScreen = ({ navigation }: any) => {
           <Text style={styles.buttonText}>Add Contact</Text>
         )}
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: WHATSAPP_COLORS.surface,
+  },
+  content: {
+    padding: 20,
+    paddingBottom: 32,
   },
   hero: {
     padding: 18,
@@ -182,6 +240,25 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '800',
     fontSize: 15,
+  },
+  contactOption: {
+    borderWidth: 1,
+    borderColor: WHATSAPP_COLORS.border,
+    backgroundColor: WHATSAPP_COLORS.card,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginTop: 8,
+  },
+  contactOptionTitle: {
+    color: WHATSAPP_COLORS.text,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  contactOptionSubtitle: {
+    color: WHATSAPP_COLORS.muted,
+    fontSize: 13,
+    marginTop: 3,
   },
 });
 
