@@ -11,10 +11,12 @@ import ContactsScreen from '../screens/ContactsScreen';
 import ArchivedChatsScreen from '../screens/ArchivedChatsScreen';
 import NewChatScreen from '../screens/NewChatScreen';
 import NewCallScreen from '../screens/NewCallScreen';
-import SettingsScreen from '../screens/HomeScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import RingtoneSettingsScreen from '../screens/RingtoneSettingsScreen';
+import ThemeSettingsScreen from '../screens/ThemeSettingsScreen';
 import { socketService } from '../services/SocketService';
-import { WHATSAPP_COLORS } from '../services/colors';
+import { useTheme } from '../contexts/ThemeContext';
 
 const Stack = createStackNavigator();
 
@@ -26,6 +28,7 @@ const BackButton = ({ navigation }: { navigation: any }) => (
 
 export const AppNavigator = () => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const { colors } = useTheme();
 
   const syncAuthState = useCallback(async () => {
     const credentials = await Keychain.getGenericPassword();
@@ -52,7 +55,7 @@ export const AppNavigator = () => {
   if (isLoggedIn === null) {
     return (
       <View style={styles.loadingScreen}>
-        <ActivityIndicator size="large" color={WHATSAPP_COLORS.brand} />
+        <ActivityIndicator size="large" color={colors.brand} />
       </View>
     );
   }
@@ -60,8 +63,8 @@ export const AppNavigator = () => {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: WHATSAPP_COLORS.brand },
-        headerTintColor: '#FFFFFF',
+        headerStyle: { backgroundColor: colors.brand },
+        headerTintColor: colors.headerText,
         headerTitleStyle: { fontWeight: '700' },
       }}
     >
@@ -133,6 +136,30 @@ export const AppNavigator = () => {
           >
             {props => <SettingsScreen {...props} onLogout={handleLogout} />}
           </Stack.Screen>
+          <Stack.Screen
+            name="YourContacts"
+            component={ContactsScreen}
+            options={({ navigation }) => ({
+              title: 'Your Contacts',
+              headerLeft: () => <BackButton navigation={navigation} />,
+            })}
+          />
+          <Stack.Screen
+            name="RingtoneSettings"
+            component={RingtoneSettingsScreen}
+            options={({ navigation }) => ({
+              title: 'Ringtone',
+              headerLeft: () => <BackButton navigation={navigation} />,
+            })}
+          />
+          <Stack.Screen
+            name="ThemeSettings"
+            component={ThemeSettingsScreen}
+            options={({ navigation }) => ({
+              title: 'Theme',
+              headerLeft: () => <BackButton navigation={navigation} />,
+            })}
+          />
           <Stack.Screen
             name="Profile"
             component={ProfileScreen}

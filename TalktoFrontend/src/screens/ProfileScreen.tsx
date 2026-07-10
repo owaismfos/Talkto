@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { WHATSAPP_COLORS} from '../services/colors';
+import { useTheme } from '../contexts/ThemeContext';
+import { type AppThemeColors } from '../services/colors';
 import { getInitials } from '../services/helper'
 
 const profileFacts = [
@@ -11,6 +12,9 @@ const profileFacts = [
 ];
 
 const ProfileScreen = () => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.hero}>
@@ -31,11 +35,11 @@ const ProfileScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: WHATSAPP_COLORS.surface },
+const createStyles = (colors: AppThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.surface },
   content: { padding: 20, gap: 12 },
   hero: {
-    backgroundColor: WHATSAPP_COLORS.brand,
+    backgroundColor: colors.brand,
     borderRadius: 28,
     padding: 24,
     alignItems: 'center',
@@ -59,13 +63,13 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   label: {
-    color: WHATSAPP_COLORS.brand,
+    color: colors.brand,
     fontSize: 12,
     fontWeight: '800',
     textTransform: 'uppercase',
     marginBottom: 6,
   },
-  value: { color: WHATSAPP_COLORS.text, fontSize: 16, lineHeight: 22, fontWeight: '600' },
+  value: { color: colors.text, fontSize: 16, lineHeight: 22, fontWeight: '600' },
 });
 
 export default ProfileScreen;

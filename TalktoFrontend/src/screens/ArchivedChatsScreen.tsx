@@ -1,12 +1,16 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { mockChats } from '../data/mockAppData';
-import { WHATSAPP_COLORS } from '../services/colors'
+import { useTheme } from '../contexts/ThemeContext';
+import { type AppThemeColors } from '../services/colors';
 import { getInitials } from '../services/helper'
 
 const archivedItems = mockChats.filter(item => !item.pinned);
 
 const ArchivedChatsScreen = ({ navigation }: any) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Archived chats</Text>
@@ -30,16 +34,16 @@ const ArchivedChatsScreen = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: WHATSAPP_COLORS.surface },
+const createStyles = (colors: AppThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.surface },
   content: { padding: 20, gap: 12 },
-  title: { color: WHATSAPP_COLORS.text, fontSize: 24, fontWeight: '800' },
-  subtitle: { color: WHATSAPP_COLORS.muted, fontSize: 14, lineHeight: 20 },
+  title: { color: colors.text, fontSize: 24, fontWeight: '800' },
+  subtitle: { color: colors.muted, fontSize: 14, lineHeight: 20 },
   card: {
-    backgroundColor: WHATSAPP_COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: WHATSAPP_COLORS.border,
+    borderColor: colors.border,
     padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
@@ -49,14 +53,14 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: WHATSAPP_COLORS.brandDark,
+    backgroundColor: colors.brandDark,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: { color: '#FFFFFF', fontWeight: '800' },
   body: { flex: 1 },
-  name: { color: WHATSAPP_COLORS.text, fontSize: 16, fontWeight: '700', marginBottom: 4 },
-  message: { color: WHATSAPP_COLORS.muted, fontSize: 13 },
+  name: { color: colors.text, fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  message: { color: colors.muted, fontSize: 13 },
 });
 
 export default ArchivedChatsScreen;

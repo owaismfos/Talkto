@@ -17,16 +17,16 @@ import {
   mockSettings,
 } from '../data/mockAppData';
 import axios from 'axios';
-import { WHATSAPP_COLORS } from '../services/colors'
 
 import { CallItem, ChatPreview, CommunityItem, StatusUpdate } from '../services/interfaces'
 import * as Keychain from 'react-native-keychain';
-import { styles as settingStyle } from './SettingsScreen';
 import { getInitials } from '../services/helper'
 import api from '../services/api'
 import Avatar from '../components/Avatar';
 import { useFocusEffect } from '@react-navigation/native';
 import { socketService } from '../services/SocketService';
+import { useTheme } from '../contexts/ThemeContext';
+import { type AppThemeColors } from '../services/colors';
 
 const TABS: HomeTabKey[] = ['Chats', 'Updates', 'Communities', 'Calls'];
 
@@ -46,6 +46,8 @@ const getApiErrorMessage = (error: unknown) => {
 };
 
 const HomeScreen = ({ navigation, onLogout }: any) => {
+  const { colors } = useTheme();
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
   const [activeTab, setActiveTab] = useState<HomeTabKey>('Chats');
   const [chatList, setChatList] = useState<ChatPreview[]>([]);
   const [statuses, setStatuses] = useState<StatusUpdate[]>([]);
@@ -110,6 +112,21 @@ const HomeScreen = ({ navigation, onLogout }: any) => {
   const handleNewContact = () => {
     setIsMenuVisible(false);
     navigation.navigate('AddContact');
+  };
+
+  const handleYourContacts = () => {
+    setIsMenuVisible(false);
+    navigation.navigate('YourContacts');
+  };
+
+  const handleRingtoneSettings = () => {
+    setIsMenuVisible(false);
+    navigation.navigate('RingtoneSettings');
+  };
+
+  const handleThemeSettings = () => {
+    setIsMenuVisible(false);
+    navigation.navigate('ThemeSettings');
   };
 
   const handleLogout = () => {
@@ -379,7 +396,7 @@ const HomeScreen = ({ navigation, onLogout }: any) => {
   };
 
   return (
-    <SafeAreaView style={settingStyle.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View>
           <Text style={styles.brand}>Talkto</Text>
@@ -399,6 +416,15 @@ const HomeScreen = ({ navigation, onLogout }: any) => {
               <View style={styles.dropdownMenu}>
                 <TouchableOpacity style={styles.menuItem} onPress={handleNewContact}>
                   <Text style={styles.menuItemText}>New Contact</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} onPress={handleYourContacts}>
+                  <Text style={styles.menuItemText}>Your Contacts</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} onPress={handleRingtoneSettings}>
+                  <Text style={styles.menuItemText}>Ringtone</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} onPress={handleThemeSettings}>
+                  <Text style={styles.menuItemText}>Theme</Text>
                 </TouchableOpacity>
                 <View style={styles.menuDivider} />
                 <TouchableOpacity style={[styles.menuItem, styles.logoutMenuItem]} onPress={handleLogout}>
@@ -425,13 +451,13 @@ const HomeScreen = ({ navigation, onLogout }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: WHATSAPP_COLORS.surface,
+    backgroundColor: colors.surface,
   },
   header: {
-    backgroundColor: WHATSAPP_COLORS.brand,
+    backgroundColor: colors.brand,
     paddingHorizontal: 20,
     paddingTop: 18,
     paddingBottom: 16,
@@ -484,10 +510,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   dropdownMenu: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: WHATSAPP_COLORS.border,
+    borderColor: colors.border,
     paddingVertical: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
@@ -500,20 +526,20 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   menuItemText: {
-    color: WHATSAPP_COLORS.text,
+    color: colors.text,
     fontSize: 15,
     fontWeight: '600',
   },
   menuDivider: {
     height: 1,
-    backgroundColor: WHATSAPP_COLORS.border,
+    backgroundColor: colors.border,
     marginVertical: 4,
   },
   logoutMenuItem: {
     marginTop: 2,
   },
   logoutText: {
-    color: WHATSAPP_COLORS.danger,
+    color: colors.danger,
     fontWeight: '700',
   },
   content: {
@@ -524,28 +550,28 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   heroCard: {
-    backgroundColor: WHATSAPP_COLORS.card,
+    backgroundColor: colors.card,
     padding: 18,
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: WHATSAPP_COLORS.border,
+    borderColor: colors.border,
   },
   communityBanner: {
-    backgroundColor: '#E9FFF0',
+    backgroundColor: colors.accentSoft,
     padding: 18,
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: '#C8F1D4',
+    borderColor: colors.border,
   },
   heroEyebrow: {
-    color: WHATSAPP_COLORS.brand,
+    color: colors.brand,
     fontSize: 12,
     fontWeight: '800',
     textTransform: 'uppercase',
     marginBottom: 8,
   },
   heroTitle: {
-    color: WHATSAPP_COLORS.text,
+    color: colors.text,
     fontSize: 20,
     lineHeight: 28,
     fontWeight: '700',
@@ -553,19 +579,19 @@ const styles = StyleSheet.create({
   input: {
     marginTop: 12,
     borderWidth: 1,
-    borderColor: WHATSAPP_COLORS.border,
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 11,
-    color: WHATSAPP_COLORS.text,
+    color: colors.text,
     fontSize: 14,
   },
   primaryButton: {
     marginTop: 12,
     minHeight: 44,
     borderRadius: 14,
-    backgroundColor: WHATSAPP_COLORS.brand,
+    backgroundColor: colors.brand,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 14,
@@ -584,26 +610,26 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   heroButton: {
-    backgroundColor: WHATSAPP_COLORS.brand,
+    backgroundColor: colors.brand,
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderRadius: 14,
   },
   heroButtonAlt: {
-    backgroundColor: '#ECFDF3',
+    backgroundColor: colors.accentSoft,
   },
   heroButtonText: {
     color: '#FFFFFF',
     fontWeight: '700',
   },
   heroButtonAltText: {
-    color: WHATSAPP_COLORS.brand,
+    color: colors.brand,
   },
   rowCard: {
-    backgroundColor: WHATSAPP_COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: WHATSAPP_COLORS.border,
+    borderColor: colors.border,
     padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
@@ -613,18 +639,18 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: WHATSAPP_COLORS.brand,
+    backgroundColor: colors.brand,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarAccent: {
-    backgroundColor: WHATSAPP_COLORS.accent,
+    backgroundColor: colors.accent,
   },
   avatarMuted: {
     backgroundColor: '#98A2B3',
   },
   communityAvatar: {
-    backgroundColor: WHATSAPP_COLORS.brandDark,
+    backgroundColor: colors.brandDark,
   },
   avatarText: {
     color: '#FFFFFF',
@@ -641,18 +667,18 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   rowTitle: {
-    color: WHATSAPP_COLORS.text,
+    color: colors.text,
     fontSize: 16,
     fontWeight: '700',
     flex: 1,
   },
   rowMeta: {
-    color: WHATSAPP_COLORS.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: '600',
   },
   rowSubtitle: {
-    color: WHATSAPP_COLORS.muted,
+    color: colors.muted,
     fontSize: 13,
     lineHeight: 18,
   },
@@ -665,7 +691,7 @@ const styles = StyleSheet.create({
     minWidth: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: WHATSAPP_COLORS.accent,
+    backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 6,
@@ -677,21 +703,21 @@ const styles = StyleSheet.create({
   },
   communityMeta: {
     marginTop: 8,
-    color: WHATSAPP_COLORS.brand,
+    color: colors.brand,
     fontSize: 12,
     fontWeight: '700',
   },
   emptyText: {
-    color: WHATSAPP_COLORS.muted,
+    color: colors.muted,
     fontSize: 14,
     textAlign: 'center',
     paddingVertical: 18,
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: WHATSAPP_COLORS.card,
+    backgroundColor: colors.card,
     borderTopWidth: 1,
-    borderTopColor: WHATSAPP_COLORS.border,
+    borderTopColor: colors.border,
     paddingBottom: 12,
     paddingTop: 10,
     paddingHorizontal: 10,
@@ -702,18 +728,18 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tabLabel: {
-    color: WHATSAPP_COLORS.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: '700',
   },
   tabLabelActive: {
-    color: WHATSAPP_COLORS.brand,
+    color: colors.brand,
   },
   tabIndicator: {
     width: 28,
     height: 4,
     borderRadius: 999,
-    backgroundColor: WHATSAPP_COLORS.brand,
+    backgroundColor: colors.brand,
   },
   tabIndicatorPlaceholder: {
     width: 28,
@@ -721,51 +747,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default HomeScreen;export const SettingsScreen = ({ navigation, onLogout }: any) => {
-
-  const handleLogout = () => {
-    Alert.alert('Logout', 'Do you want to sign out from this device?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Logout',
-        style: 'destructive',
-        onPress: async () => {
-          await Keychain.resetGenericPassword();
-          if (onLogout) {
-            await onLogout();
-          }
-        },
-      },
-    ]);
-  };
-
-  return (
-    <ScrollView style={settingStyle.container} contentContainerStyle={styles.content}>
-      <TouchableOpacity style={settingStyle.profileCard} onPress={() => navigation.navigate('Profile')}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{getInitials('Talkto User')}</Text>
-        </View>
-        <View style={settingStyle.profileBody}>
-          <Text style={settingStyle.profileName}>Talkto User</Text>
-          {/* <Text style={styles.profileStatus}>Building a WhatsApp-style frontend in React Native</Text> */}
-        </View>
-      </TouchableOpacity>
-
-      {mockSettings.map(item => (
-        <View key={item.id} style={settingStyle.settingCard}>
-          <Text style={settingStyle.settingTitle}>{item.title}</Text>
-          <Text style={settingStyle.settingDescription}>{item.description}</Text>
-        </View>
-      ))}
-
-      <TouchableOpacity style={settingStyle.manageCard} onPress={() => navigation.navigate('Contacts')}>
-        <Text style={settingStyle.settingTitle}>Manage contacts</Text>
-        <Text style={settingStyle.settingDescription}>Review saved contacts and jump straight into a chat.</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={settingStyle.logoutButton} onPress={handleLogout}>
-        <Text style={settingStyle.logoutText}>Logout</Text>
-      </TouchableOpacity>
-    </ScrollView>
-  );
-};
+export default HomeScreen;

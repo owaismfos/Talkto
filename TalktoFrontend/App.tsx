@@ -7,6 +7,7 @@ import { MenuProvider } from 'react-native-popup-menu';
 import * as Keychain from 'react-native-keychain';
 import { socketService } from './src/services/SocketService';
 import { navigate, navigationRef } from './src/services/NavigationService';
+import { ThemeProvider } from './src/contexts/ThemeContext';
 
 
 const App = () => {
@@ -39,11 +40,13 @@ const App = () => {
   }, []);
 
   return (
-    <MenuProvider>
-      <NavigationContainer ref={navigationRef}>
-        <AppNavigator />
-      </NavigationContainer>
-    </MenuProvider>
+    <ThemeProvider>
+      <MenuProvider>
+        <NavigationContainer ref={navigationRef}>
+          <AppNavigator />
+        </NavigationContainer>
+      </MenuProvider>
+    </ThemeProvider>
   );
 };
 

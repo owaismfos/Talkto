@@ -1,7 +1,8 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { WHATSAPP_COLORS } from '../services/colors';
+import { useTheme } from '../contexts/ThemeContext';
+import { type AppThemeColors } from '../services/colors';
 import { getInitials } from '../services/helper';
 import api from '../services/api';
 
@@ -12,6 +13,8 @@ interface Contact {
 }
 
 const NewChatScreen = ({ navigation }: any) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -47,7 +50,7 @@ const NewChatScreen = ({ navigation }: any) => {
         </TouchableOpacity>
       </View>
       <Text style={styles.sectionTitle}>Start a conversation</Text>
-      {isLoading ? <ActivityIndicator color={WHATSAPP_COLORS.brand} /> : null}
+      {isLoading ? <ActivityIndicator color={colors.brand} /> : null}
       {contacts.map(item => (
         <TouchableOpacity
           key={item.id}
@@ -70,25 +73,25 @@ const NewChatScreen = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: WHATSAPP_COLORS.surface },
+const createStyles = (colors: AppThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.surface },
   content: { padding: 20, gap: 12 },
   actionRow: { gap: 12 },
   actionCard: {
-    backgroundColor: WHATSAPP_COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: WHATSAPP_COLORS.border,
+    borderColor: colors.border,
     padding: 18,
   },
-  actionTitle: { color: WHATSAPP_COLORS.text, fontSize: 17, fontWeight: '800', marginBottom: 6 },
-  actionBody: { color: WHATSAPP_COLORS.muted, fontSize: 14, lineHeight: 20 },
-  sectionTitle: { color: WHATSAPP_COLORS.brand, fontSize: 13, fontWeight: '800', textTransform: 'uppercase', marginTop: 4 },
+  actionTitle: { color: colors.text, fontSize: 17, fontWeight: '800', marginBottom: 6 },
+  actionBody: { color: colors.muted, fontSize: 14, lineHeight: 20 },
+  sectionTitle: { color: colors.brand, fontSize: 13, fontWeight: '800', textTransform: 'uppercase', marginTop: 4 },
   contactCard: {
-    backgroundColor: WHATSAPP_COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: WHATSAPP_COLORS.border,
+    borderColor: colors.border,
     padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
@@ -98,16 +101,16 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: WHATSAPP_COLORS.brand,
+    backgroundColor: colors.brand,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: { color: '#FFFFFF', fontWeight: '800' },
   body: { flex: 1 },
-  name: { color: WHATSAPP_COLORS.text, fontSize: 16, fontWeight: '700', marginBottom: 4 },
-  status: { color: WHATSAPP_COLORS.muted, fontSize: 13 },
+  name: { color: colors.text, fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  status: { color: colors.muted, fontSize: 13 },
   emptyText: {
-    color: WHATSAPP_COLORS.muted,
+    color: colors.muted,
     fontSize: 14,
     textAlign: 'center',
     paddingVertical: 16,

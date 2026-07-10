@@ -1,9 +1,10 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../services/api';
 import { getInitials, getAvatarColor } from '../services/helper'
-import { WHATSAPP_COLORS } from '../services/colors';
+import { useTheme } from '../contexts/ThemeContext';
+import { type AppThemeColors } from '../services/colors';
 
 interface Contact {
   id: string;
@@ -12,6 +13,8 @@ interface Contact {
 }
 
 const ContactsScreen = ({ navigation }: any) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [contactList, setContactList] = useState<Contact[]>([]);
 
   useFocusEffect(
@@ -60,10 +63,10 @@ const ContactsScreen = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: WHATSAPP_COLORS.surface,
+    backgroundColor: colors.surface,
   },
   content: {
     padding: 16,
@@ -74,9 +77,9 @@ const styles = StyleSheet.create({
     padding: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: WHATSAPP_COLORS.border,
+    borderColor: colors.border,
     borderRadius: 18,
-    backgroundColor: WHATSAPP_COLORS.card,
+    backgroundColor: colors.card,
   },
   avatar: {
     width: 55,
@@ -98,7 +101,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 17,
     fontWeight: '700',
-    color: WHATSAPP_COLORS.text,
+    color: colors.text,
   },
   status: {
     color: WHATSAPP_COLORS.muted,

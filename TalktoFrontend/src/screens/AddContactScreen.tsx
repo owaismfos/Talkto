@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -13,10 +13,13 @@ import {
   View,
 } from 'react-native';
 import api from '../services/api';
-import { WHATSAPP_COLORS } from '../services/colors';
+import { useTheme } from '../contexts/ThemeContext';
+import { type AppThemeColors } from '../services/colors';
 import Contacts from 'react-native-contacts';
 
 const AddContactScreen = ({ navigation, route }: any) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [number, setNumber] = useState(route?.params?.phoneNumber ?? '');
   const [nickname, setNickname] = useState(route?.params?.initialName ?? '');
   const [isValidUser, setIsValidUser] = useState(false);
@@ -122,7 +125,7 @@ const AddContactScreen = ({ navigation, route }: any) => {
 
       {checking ? <Text style={styles.helper}>Checking account availability...</Text> : null}
       {!checking && number.length >= 10 ? (
-        <Text style={[styles.helper, { color: isValidUser ? WHATSAPP_COLORS.accent : WHATSAPP_COLORS.danger }]}>
+        <Text style={[styles.helper, { color: isValidUser ? colors.accent : colors.danger }]}>
           {isValidUser ? 'User found' : 'No matching user found'}
         </Text>
       ) : null}
@@ -175,10 +178,10 @@ const AddContactScreen = ({ navigation, route }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: WHATSAPP_COLORS.surface,
+    backgroundColor: colors.surface,
   },
   content: {
     padding: 20,
@@ -187,24 +190,24 @@ const styles = StyleSheet.create({
   hero: {
     padding: 18,
     borderRadius: 22,
-    backgroundColor: '#E8FFF1',
+    backgroundColor: colors.accentSoft,
     borderWidth: 1,
-    borderColor: '#C6EED2',
+    borderColor: colors.border,
     marginBottom: 20,
   },
   heroTitle: {
-    color: WHATSAPP_COLORS.text,
+    color: colors.text,
     fontSize: 21,
     fontWeight: '800',
     marginBottom: 6,
   },
   heroText: {
-    color: WHATSAPP_COLORS.muted,
+    color: colors.muted,
     fontSize: 14,
     lineHeight: 20,
   },
   label: {
-    color: WHATSAPP_COLORS.brand,
+    color: colors.brand,
     fontSize: 12,
     fontWeight: '800',
     textTransform: 'uppercase',
@@ -213,22 +216,22 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: WHATSAPP_COLORS.border,
-    backgroundColor: WHATSAPP_COLORS.card,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     marginVertical: 4,
     paddingHorizontal: 14,
     paddingVertical: 14,
     borderRadius: 16,
-    color: WHATSAPP_COLORS.text,
+    color: colors.text,
   },
   helper: {
     marginTop: 8,
-    color: WHATSAPP_COLORS.muted,
+    color: colors.muted,
     fontSize: 13,
   },
   button: {
     marginTop: 28,
-    backgroundColor: WHATSAPP_COLORS.brand,
+    backgroundColor: colors.brand,
     paddingVertical: 15,
     borderRadius: 16,
     alignItems: 'center',
@@ -243,20 +246,20 @@ const styles = StyleSheet.create({
   },
   contactOption: {
     borderWidth: 1,
-    borderColor: WHATSAPP_COLORS.border,
-    backgroundColor: WHATSAPP_COLORS.card,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 12,
     marginTop: 8,
   },
   contactOptionTitle: {
-    color: WHATSAPP_COLORS.text,
+    color: colors.text,
     fontWeight: '700',
     fontSize: 14,
   },
   contactOptionSubtitle: {
-    color: WHATSAPP_COLORS.muted,
+    color: colors.muted,
     fontSize: 13,
     marginTop: 3,
   },
