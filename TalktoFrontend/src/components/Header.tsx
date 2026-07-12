@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
+import { fontSize, fontWeight, layout } from '../theme/tokens';
 
 const Header = ({ title }: { title: string }) => {
   return (
@@ -14,7 +15,7 @@ const styles = StyleSheet.create({
     height: 60,
     backgroundColor: '#075E54', // WhatsApp-style Green
     justifyContent: 'center',
-    paddingHorizontal: 15,
+    paddingHorizontal: layout.buttonPaddingHorizontal,
     // Add a shadow that works on Android
     elevation: 5,
     // Add a shadow that works on iOS/Web
@@ -25,8 +26,8 @@ const styles = StyleSheet.create({
   },
   title: {
     color: 'white',
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: fontSize.heading3,
+    fontWeight: fontWeight.bold,
     textAlign: 'center'
   },
 });

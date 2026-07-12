@@ -281,6 +281,9 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
             if not verify_password(request.password, user.password_hash):
                 raise HTTPException(status_code=401, detail="Invalid credentials")
 
+        user.publickey = request.publickey
+        db.commit()
+        db.refresh(user)
         refresh_token = create_refresh_token()
         session = db.query(UserSession).filter(
             UserSession.user_id == user.id,

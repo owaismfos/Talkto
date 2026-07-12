@@ -2,6 +2,7 @@
 **/.env
 .codex
 .gitroot/
+.github/
 
 # Local notes / setup commands
 # FastapiBackend/TableQueries.sql

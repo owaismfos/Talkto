@@ -63,7 +63,10 @@ export const AppNavigator = () => {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: colors.brand },
+        headerStyle: { 
+          backgroundColor: colors.brand,
+          height: 50,
+        },
         headerTintColor: colors.headerText,
         headerTitleStyle: { fontWeight: '700' },
       }}

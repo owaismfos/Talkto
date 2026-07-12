@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../contexts/ThemeContext';
-import { type AppThemeColors } from '../services/colors';
+import { type AppThemeColors } from '../theme/colors';
 import { getInitials } from '../services/helper';
 import api from '../services/api';
 

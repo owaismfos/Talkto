@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import api from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
-import { type AppThemeColors } from '../services/colors';
+import { type AppThemeColors } from '../theme/colors';
 import Contacts from 'react-native-contacts';
 
 const AddContactScreen = ({ navigation, route }: any) => {

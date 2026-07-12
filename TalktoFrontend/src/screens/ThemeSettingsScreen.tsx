@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { THEME_COLOR_OPTIONS, type AccentColorKey, type AppThemeColors } from '../services/colors';
+import { THEME_COLOR_OPTIONS, type AccentColorKey, type AppThemeColors } from '../theme/colors';
 import { useTheme } from '../contexts/ThemeContext';
 
 const appearanceOptions = [

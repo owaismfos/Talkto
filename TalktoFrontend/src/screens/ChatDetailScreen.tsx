@@ -29,7 +29,7 @@ import { formatTime } from '../services/helper';
 import { socketService } from '../services/SocketService';
 import { mockChats } from '../data/mockAppData';
 import Avatar from '../components/Avatar';
-import { WHATSAPP_COLORS } from '../services/colors';
+import { WHATSAPP_COLORS } from '../theme/colors';
 
 interface Message {
   id: string;

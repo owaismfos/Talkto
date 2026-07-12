@@ -2,8 +2,9 @@ import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { mockChats } from '../data/mockAppData';
 import { useTheme } from '../contexts/ThemeContext';
-import { type AppThemeColors } from '../services/colors';
+import { type AppThemeColors } from '../theme/colors';
 import { getInitials } from '../services/helper'
+import { fontSize, fontWeight, radius, spacing } from '../theme/tokens';
 
 const archivedItems = mockChats.filter(item => !item.pinned);
 
@@ -36,18 +37,18 @@ const ArchivedChatsScreen = ({ navigation }: any) => {
 
 const createStyles = (colors: AppThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
-  content: { padding: 20, gap: 12 },
-  title: { color: colors.text, fontSize: 24, fontWeight: '800' },
-  subtitle: { color: colors.muted, fontSize: 14, lineHeight: 20 },
+  content: { padding: spacing.xl, gap: spacing.md },
+  title: { color: colors.text, fontSize: fontSize.heading2, fontWeight: fontWeight.extraBold },
+  subtitle: { color: colors.muted, fontSize: fontSize.body, lineHeight: 20 },
   card: {
     backgroundColor: colors.card,
-    borderRadius: 20,
+    borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 14,
+    padding: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
   },
   avatar: {
     width: 50,
@@ -57,10 +58,10 @@ const createStyles = (colors: AppThemeColors) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarText: { color: '#FFFFFF', fontWeight: '800' },
+  avatarText: { color: '#FFFFFF', fontWeight: fontWeight.extraBold },
   body: { flex: 1 },
-  name: { color: colors.text, fontSize: 16, fontWeight: '700', marginBottom: 4 },
-  message: { color: colors.muted, fontSize: 13 },
+  name: { color: colors.text, fontSize: fontSize.bodyLarge, fontWeight: fontWeight.bold, marginBottom: spacing.xs },
+  message: { color: colors.muted, fontSize: fontSize.small },
 });
 
 export default ArchivedChatsScreen;

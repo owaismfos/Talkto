@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { getInitials } from '../services/helper';
 import { getAvatarColor } from '../services/helper';
+import { fontWeight } from '../theme/tokens';
 
 interface AvatarProps {
   name: string;
@@ -35,7 +36,7 @@ const styles = StyleSheet.create({
   },
   text: {
     color: 'white',
-    fontWeight: 'bold',
+    fontWeight: fontWeight.bold,
   },
 });
 

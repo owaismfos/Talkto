@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
-import { type AppThemeColors } from '../services/colors';
+import { type AppThemeColors } from '../theme/colors';
 import { getInitials } from '../services/helper'
+import { fontSize, fontWeight, radius, spacing } from '../theme/tokens';
 
 const profileFacts = [
   { label: 'Display name', value: 'Talkto User' },
@@ -37,11 +38,11 @@ const ProfileScreen = () => {
 
 const createStyles = (colors: AppThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
-  content: { padding: 20, gap: 12 },
+  content: { padding: spacing.xl, gap: spacing.md },
   hero: {
     backgroundColor: colors.brand,
-    borderRadius: 28,
-    padding: 24,
+    borderRadius: radius.xl,
+    padding: spacing.xxl,
     alignItems: 'center',
   },
   avatar: {
@@ -52,24 +53,24 @@ const createStyles = (colors: AppThemeColors) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarText: { color: '#FFFFFF', fontSize: 24, fontWeight: '800' },
-  name: { color: '#FFFFFF', fontSize: 24, fontWeight: '800', marginTop: 14 },
-  about: { color: 'rgba(255,255,255,0.82)', fontSize: 14, marginTop: 6, textAlign: 'center' },
+  avatarText: { color: '#FFFFFF', fontSize: fontSize.heading2, fontWeight: fontWeight.extraBold },
+  name: { color: '#FFFFFF', fontSize: fontSize.heading2, fontWeight: fontWeight.extraBold, marginTop: spacing.md },
+  about: { color: 'rgba(255,255,255,0.82)', fontSize: fontSize.body, marginTop: spacing.sm, textAlign: 'center' },
   infoCard: {
-    backgroundColor: WHATSAPP_COLORS.card,
-    borderRadius: 18,
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: WHATSAPP_COLORS.border,
-    padding: 16,
+    borderColor: colors.border,
+    padding: spacing.lg,
   },
   label: {
     color: colors.brand,
-    fontSize: 12,
-    fontWeight: '800',
+    fontSize: fontSize.caption,
+    fontWeight: fontWeight.extraBold,
     textTransform: 'uppercase',
-    marginBottom: 6,
+    marginBottom: spacing.sm,
   },
-  value: { color: colors.text, fontSize: 16, lineHeight: 22, fontWeight: '600' },
+  value: { color: colors.text, fontSize: fontSize.bodyLarge, lineHeight: 22, fontWeight: fontWeight.semibold },
 });
 
 export default ProfileScreen;

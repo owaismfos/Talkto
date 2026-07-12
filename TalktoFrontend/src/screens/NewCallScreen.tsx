@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { WHATSAPP_COLORS } from '../services/colors';
+import { WHATSAPP_COLORS } from '../theme/colors';
 import { getInitials } from '../services/helper';
 import api from '../services/api';
 import { CallItem } from '../services/interfaces';

@@ -20,7 +20,7 @@ import {
   RTCPeerConnection,
   RTCSessionDescription,
 } from 'react-native-webrtc';
-import { WHATSAPP_COLORS } from '../services/colors';
+import { WHATSAPP_COLORS } from '../theme/colors';
 import { getContactDisplayName, getInitials } from '../services/helper';
 import { socketService } from '../services/SocketService';
 import api from '../services/api';

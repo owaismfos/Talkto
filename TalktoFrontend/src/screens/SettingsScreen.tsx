@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
-import { type AppThemeColors } from '../services/colors';
+import { type AppThemeColors } from '../theme/colors';
 
 const createStyles = (colors: AppThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },

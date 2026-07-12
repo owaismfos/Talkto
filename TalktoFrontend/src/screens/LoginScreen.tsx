@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import axios from 'axios';
 import DeviceInfo from 'react-native-device-info';
 import * as Keychain from 'react-native-keychain';
@@ -14,6 +14,11 @@ import {
 } from 'react-native';
 
 import api from '../services/api';
+import { useTheme } from '../contexts/ThemeContext';
+import { textStyles } from '../theme/styles';
+import { fontSize, fontWeight, radius, spacing } from '../theme/tokens';
+import type { AppThemeColors } from '../theme/colors';
+import { createKeys } from '../utils/encryption';
 
 const getLoginErrorMessage = (error: unknown) => {
   if (axios.isAxiosError(error)) {
@@ -33,6 +38,8 @@ const getLoginErrorMessage = (error: unknown) => {
 };
 
 const LoginScreen = ({ navigation: _navigation, onLoginSuccess }: any) => {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [loading, setLoading] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
@@ -51,32 +58,35 @@ const LoginScreen = ({ navigation: _navigation, onLoginSuccess }: any) => {
       const deviceName = await DeviceInfo.getDeviceName();
       console.log('Device ID:', deviceId);
       console.log('Device Name:', deviceName);
+      const keys = await createKeys();
+      console.log('Generated Keys:', keys);
       try {
-      const response = await api.post('/auth/login', 
-        {
-          phone_number: phoneNumber,           // Matches Pydantic 'email'
-          password: password,     // Matches Pydantic 'password'
-          device_id: deviceId,     // Matches Pydantic 'device_id'
-          device_name: deviceName, // Matches Pydantic 'device_name'
-          fcm_token: 'dummy_fcm_token' // Optional: Add if your backend expects it
+        const response = await api.post('/auth/login', 
+          {
+            phone_number: phoneNumber,           // Matches Pydantic 'email'
+            password: password,     // Matches Pydantic 'password'
+            device_id: deviceId,     // Matches Pydantic 'device_id'
+            device_name: deviceName, // Matches Pydantic 'device_name'
+            fcm_token: 'dummy_fcm_token', // Optional: Add if your backend expects it
+            publickey: keys.publicKey // Use the generated public key
+          }
+        );
+        console.log('Login response status:', response.status);
+
+        const result = response.data
+        console.log('Login response data:', result);
+        // Store the tokens securely using Keychain
+        await Keychain.setGenericPassword('session', JSON.stringify({
+          accessToken: result.access_token,
+          refreshToken: result.refresh_token,
+          userId: result.user_id,
+          publicKey: keys.publicKey,
+          privateKey: keys.privateKey
+        }));
+
+        if (onLoginSuccess) {
+          await onLoginSuccess();
         }
-      );
-      console.log('Login response status:', response.status);
-      // const responseText = await response.text();
-      // console.log('Login response text:', responseText);
-
-      const result = response.data
-      console.log('Login response data:', result);
-      // Store the tokens securely using Keychain
-      await Keychain.setGenericPassword('session', JSON.stringify({
-        accessToken: result.access_token,
-        refreshToken: result.refresh_token,
-        userId: result.user_id,
-      }));
-
-      if (onLoginSuccess) {
-        await onLoginSuccess();
-      }
       } catch (error) {
         const message = getLoginErrorMessage(error);
         Alert.alert('Login Failed', message);
@@ -109,7 +119,7 @@ const LoginScreen = ({ navigation: _navigation, onLoginSuccess }: any) => {
         <TextInput
           placeholder="Mobile Number"
           style={styles.mobileInput}
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.muted}
           keyboardType="phone-pad" // Shows numeric keypad
           value={phoneNumber} // Using your existing 'email' state variable
           onChangeText={text => setPhoneNumber(text)}
@@ -120,7 +130,7 @@ const LoginScreen = ({ navigation: _navigation, onLoginSuccess }: any) => {
         <TextInput
           placeholder="Password"
           style={styles.passwordInput}
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.muted}
           value={password}
           onChangeText={setPassword}
           // This flips between true (dots) and false (plain text)
@@ -138,7 +148,7 @@ const LoginScreen = ({ navigation: _navigation, onLoginSuccess }: any) => {
       </View>
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         {loading ? (
-          <ActivityIndicator color="white" />
+          <ActivityIndicator color={colors.headerText} />
         ) : (
           <Text style={styles.buttonText}>Login</Text>
         )}
@@ -147,19 +157,19 @@ const LoginScreen = ({ navigation: _navigation, onLoginSuccess }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    padding: 25,
-    backgroundColor: '#fff',
+    padding: spacing.xxl,
+    backgroundColor: colors.surface,
   },
   logo: {
-    fontSize: 38,
-    fontWeight: 'bold',
-    color: '#075E54',
+    fontSize: fontSize.display,
+    fontWeight: fontWeight.extraBold,
+    color: colors.brandDark,
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: spacing.huge,
   },
   input: {
     borderBottomWidth: 1,
@@ -171,76 +181,75 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent', // Ensure no white-on-white overlap
   },
   button: {
-    backgroundColor: '#075E54',
-    padding: 15,
-    borderRadius: 8,
+    backgroundColor: colors.brandDark,
+    padding: spacing.lg,
+    borderRadius: radius.sm,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: spacing.md,
   },
   buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
+    color: colors.headerText,
+    ...textStyles.button,
   },
   phoneInputWrapper: {
     flexDirection: 'row', // Lays children out horizontally
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-    marginBottom: 20,
+    borderBottomColor: colors.border,
+    marginBottom: spacing.xl,
   },
   flagImage: {
     width: 30,          // Set specific width
     height: 20,         // Set specific height
     borderRadius: 2,    // Optional: slight rounded corners
-    marginRight: 8,
+    marginRight: spacing.sm,
     resizeMode: 'contain', // Ensures the flag doesn't look stretched
   },
   countryPicker: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingRight: 10,
+    paddingRight: spacing.md,
     borderRightWidth: 1, // Vertical line separator
-    borderRightColor: '#eee',
+    borderRightColor: colors.border,
     height: '60%', // Line height
-    marginRight: 10,
+    marginRight: spacing.md,
   },
   flagText: {
     fontSize: 20,
     marginRight: 5,
   },
   countryCode: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
+    fontSize: fontSize.bodyLarge,
+    color: colors.text,
+    fontWeight: fontWeight.medium,
   },
   mobileInput: {
     flex: 1, // Takes up the remaining width
-    padding: 10,
-    fontSize: 16,
-    color: '#000',
+    padding: spacing.md,
+    fontSize: fontSize.bodyLarge,
+    color: colors.text,
   },
 
   passwordWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-    marginBottom: 25,
+    borderBottomColor: colors.border,
+    marginBottom: spacing.xxl,
   },
   passwordInput: {
     flex: 1, // Takes up all space except for the "Show" button
-    padding: 10,
-    fontSize: 16,
-    color: '#000',
+    padding: spacing.md,
+    fontSize: fontSize.bodyLarge,
+    color: colors.text,
   },
   toggleButton: {
-    padding: 10,
+    padding: spacing.md,
   },
   toggleText: {
-    color: '#075E54', // Match your app theme color
-    fontWeight: 'bold',
-    fontSize: 12,
+    color: colors.brandDark,
+    fontWeight: fontWeight.bold,
+    fontSize: fontSize.caption,
   },
 });
 

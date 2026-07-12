@@ -16,6 +16,8 @@ class User(Base):
     
     # username varchar(50)
     username = Column(String(50), unique=True, nullable=True)
+
+    publickey = Column(String(255), nullable=True)  # Store the public key for encryption
     
     # password_hash varchar(255)
     password_hash = Column(String(255), nullable=False)

@@ -53,3 +53,16 @@ public 68.233.111.204
 
 
 logs check: sudo journalctl -u fastapi -f
+
+adb pair 192.168.1.36:39451
+
+adb connect 192.168.1.36:XXXXX
+
+adb -s 192.168.1.36:12345 reverse tcp:8081 tcp:8081
+
+npx react-native run-android --deviceId 192.168.1.36:12345
+
+adb -s emulator-5554 emu kill
+
+adb reverse tcp:8081 tcp:8081
+npm run android

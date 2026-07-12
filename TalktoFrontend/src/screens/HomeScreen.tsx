@@ -26,7 +26,7 @@ import Avatar from '../components/Avatar';
 import { useFocusEffect } from '@react-navigation/native';
 import { socketService } from '../services/SocketService';
 import { useTheme } from '../contexts/ThemeContext';
-import { type AppThemeColors } from '../services/colors';
+import { type AppThemeColors } from '../theme/colors';
 
 const TABS: HomeTabKey[] = ['Chats', 'Updates', 'Communities', 'Calls'];
 
@@ -79,7 +79,7 @@ const HomeScreen = ({ navigation, onLogout }: any) => {
       } else {
         console.log('Chats API error:', getApiErrorMessage(chatsRes.reason), chatsRes.reason);
         setChatList([]);
-        Alert.alert('Chats unavailable', getApiErrorMessage(chatsRes.reason));
+        // Alert.alert('Chats unavailable', getApiErrorMessage(chatsRes.reason));
       }
 
       if (statusesRes.status === 'fulfilled') {
@@ -406,7 +406,6 @@ const HomeScreen = ({ navigation, onLogout }: any) => {
           <TouchableOpacity
             style={styles.headerMenuButton}
             onPress={() => setIsMenuVisible(prev => !prev)}
-            activeOpacity={0.8}
           >
             <Text style={styles.headerMenuIcon}>⋮</Text>
           </TouchableOpacity>
@@ -459,8 +458,8 @@ const createStyles = (colors: AppThemeColors) => StyleSheet.create({
   header: {
     backgroundColor: colors.brand,
     paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 16,
+    paddingTop: 10,
+    paddingBottom: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -481,10 +480,10 @@ const createStyles = (colors: AppThemeColors) => StyleSheet.create({
     position: 'relative',
   },
   headerMenuButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: 'rgba(255,255,255,0.16)',
+    // width: 42,
+    // height: 42,
+    // borderRadius: 21,
+    // backgroundColor: 'rgba(255,255,255,0.16)',
     alignItems: 'center',
     justifyContent: 'center',
   },

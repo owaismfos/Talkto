@@ -4,7 +4,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import api from '../services/api';
 import { getInitials, getAvatarColor } from '../services/helper'
 import { useTheme } from '../contexts/ThemeContext';
-import { type AppThemeColors } from '../services/colors';
+import { type AppThemeColors } from '../theme/colors';
+import { fontSize, fontWeight, radius, spacing } from '../theme/tokens';
 
 interface Contact {
   id: string;
@@ -69,16 +70,16 @@ const createStyles = (colors: AppThemeColors) => StyleSheet.create({
     backgroundColor: colors.surface,
   },
   content: {
-    padding: 16,
-    gap: 12,
+    padding: spacing.lg,
+    gap: spacing.md,
   },
   contactRow: {
     flexDirection: 'row',
-    padding: 14,
+    padding: spacing.md,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 18,
+    borderRadius: radius.lg,
     backgroundColor: colors.card,
   },
   avatar: {
@@ -88,31 +89,31 @@ const createStyles = (colors: AppThemeColors) => StyleSheet.create({
     // backgroundColor: WHATSAPP_COLORS.brand,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
+    marginRight: spacing.lg,
   },
   avatarText: {
     color: 'white',
-    fontWeight: 'bold',
-    fontSize: 18,
+    fontWeight: fontWeight.bold,
+    fontSize: fontSize.subtitle,
   },
   textContainer: {
     flex: 1,
   },
   name: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: fontSize.bodyLarge,
+    fontWeight: fontWeight.bold,
     color: colors.text,
   },
   status: {
-    color: WHATSAPP_COLORS.muted,
-    fontSize: 13,
-    marginTop: 4,
+    color: colors.muted,
+    fontSize: fontSize.small,
+    marginTop: spacing.xs,
   },
   emptyText: {
-    color: WHATSAPP_COLORS.muted,
-    fontSize: 14,
+    color: colors.muted,
+    fontSize: fontSize.body,
     textAlign: 'center',
-    paddingVertical: 20,
+    paddingVertical: spacing.xl,
   },
 });
 

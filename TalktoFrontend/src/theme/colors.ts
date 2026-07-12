@@ -20,7 +20,7 @@ export interface AppThemeColors {
   headerText: string;
 }
 
-export const THEME_COLOR_OPTIONS: Record<AccentColorKey, { name: string; primary: string; darker: string; light: string; background: string }> = {
+export const THEME_COLOR_OPTIONS: Record<AccentColorKey, {name: string; primary: string; darker: string; light: string; background: string }> = {
   green: { name: 'Green', primary: '#16A34A', darker: '#16A34A', light: '#DCFCE7', background: '#F0FDF4' },
   yellow: { name: 'Yellow', primary: '#EAB308', darker: '#CA8A04', light: '#FEF9C3', background: '#FEFCE8' },
   blue: { name: 'Blue', primary: '#3B82F6', darker: '#2563EB', light: '#DBEAFE', background: '#EFF6FF' },

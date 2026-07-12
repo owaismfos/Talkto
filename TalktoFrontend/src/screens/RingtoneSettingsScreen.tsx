@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { pick, types, errorCodes, isErrorWithCode } from '@react-native-documents/picker';
 import Sound from 'react-native-sound';
-import { WHATSAPP_COLORS } from '../services/colors';
+import { WHATSAPP_COLORS } from '../theme/colors';
 import { getSelectedRingtone, setSelectedRingtone } from '../services/preferences';
 
 interface RingtoneOption {

@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Appearance, StatusBar } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { setActiveThemePalette, resolveThemePalette, THEME_COLOR_OPTIONS, type AccentColorKey, type ThemeAppearanceMode, type AppThemeColors } from '../services/colors';
+import { setActiveThemePalette, resolveThemePalette, THEME_COLOR_OPTIONS, type AccentColorKey, type ThemeAppearanceMode, type AppThemeColors } from '../theme/colors';
 
 interface ThemeContextValue {
   accentColor: AccentColorKey;

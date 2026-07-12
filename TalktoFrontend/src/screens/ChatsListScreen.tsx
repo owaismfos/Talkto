@@ -3,7 +3,7 @@ import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react
 import api from '../services/api';
 import { ChatPreview } from '../services/interfaces';
 import { getInitials } from '../services/helper'
-import { WHATSAPP_COLORS } from '../services/colors'
+import { WHATSAPP_COLORS } from '../theme/colors'
 
 const ChatsListScreen = ({ navigation }: any) => {
   const [chatList, setChatList] = useState<ChatPreview[]>([]);
